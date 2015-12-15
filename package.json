@@ -2,22 +2,38 @@
   "name": "six-sdk",
   "version": "0.1.0-alpha1",
   "description": "SIX Javascript SDK",
-  "main": "index.js",
+  "main": "lib",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepublish": "npm run compile",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "compile": "node node_modules/babel-cli/bin/babel.js src --out-dir lib --presets es2015",
+    "dist": "npm run dist:dev && npm run dist:min",
+    "dist:dev": "node node_modules/webpack/bin/webpack",
+    "dist:min": "node node_modules/webpack/bin/webpack -p --output-file dist/six-sdk.min.js"
   },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/six-sdk/six-javascript-sdk.git"
   },
+  "author": "Andreas Bielk <andreas.bielk@six-group.se> (http://www.six.se)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/six-sdk/six-javascript-sdk/issues"
+  },
+  "homepage": "https://github.com/six-sdk/six-javascript-sdk#readme",
   "keywords": [
     "six",
     "sdk"
   ],
-  "author": "Andreas Bielk",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/six-sdk/six-javascript-sdk/issues"
+  "devDependencies": {
+    "babel-cli": "^6.3.17",
+    "babel-core": "^6.3.17",
+    "babel-loader": "^6.2.0",
+    "babel-plugin-transform-runtime": "^6.3.13",
+    "babel-preset-es2015": "^6.3.13",
+    "webpack": "^1.12.9"
   },
-  "homepage": "https://github.com/six-sdk/six-javascript-sdk#readme"
+  "dependencies": {
+    "babel-runtime": "^6.3.19"
+  }
 }
