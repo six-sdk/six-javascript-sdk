@@ -1,0 +1,23 @@
+{
+  "name": "six-sdk",
+  "version": "0.1.0-alpha1",
+  "description": "SIX Javascript SDK",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/six-sdk/six-javascript-sdk.git"
+  },
+  "keywords": [
+    "six",
+    "sdk"
+  ],
+  "author": "Andreas Bielk",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/six-sdk/six-javascript-sdk/issues"
+  },
+  "homepage": "https://github.com/six-sdk/six-javascript-sdk#readme"
+}
