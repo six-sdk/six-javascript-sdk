@@ -1,4 +1,11 @@
 console.log('Loading SDK')
-const phrase = require('./temp')
-// const wrap = (um) => um +1;
-module.exports = function hello (who) { return phrase + who }
+
+import connection, {authenticateWithCredentials} from './connection'
+
+window.connection = connection
+window.authenticateWithCredentials = authenticateWithCredentials
+
+export function connect (token) {
+  console.log('connect with token', token)
+  return connection(token)
+}
