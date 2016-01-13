@@ -26,12 +26,15 @@ let fetch = function (token, url, {method, body} = {method: 'GET', body: null}) 
   })
 }
 
-export function authenticateWithCredentials (client_id, client_secret) {
+export function authenticateWithCredentials (client_id, client_secret, callback) {
   console.warn('never bundle your credentials with your browser code!')
   fetch(null, '/authorization/token', {method: 'POST', body: {client_id: client_id, client_secret: client_secret}})
     .then(({access_token}) => {
       window.TOKEN = access_token
       console.log('got token ', access_token)
+      if (callback) {
+        callback(access_token)
+      }
     })
 }
 
@@ -45,10 +48,22 @@ export default function (token) {
   return {
     subscribe: function subscribe (resource, callback) {
       console.log('subscribe', token, resource)
+
       const unsubFn = () => unsubscribe('foo')
+
       fetch(token, resource)
-        .then((response) => callback(null, response, unsubFn))
-        .catch((err) => callback(err, null, unsubFn))
+        .then((response) => callback(null, response, resource, unsubFn))
+        .catch((err) => callback(err, null, resource, unsubFn))
+
+      return unsubFn
+    },
+
+    refresh: function refresh (resource) {
+      console.log('refresh',resource)
+    },
+
+    clearCache: function clearCache() {
+      console.log('clearCache')
     }
   }
 }

@@ -2,10 +2,14 @@ console.log('Loading SDK')
 
 import connection, {authenticateWithCredentials} from './connection'
 
-window.connection = connection
-window.authenticateWithCredentials = authenticateWithCredentials
-
-export function connect (token) {
-  console.log('connect with token', token)
+function connect (token, version) {
+  console.log('connect with token', token, version)
   return connection(token)
+}
+
+export default {
+  connect: connect,
+  _internal: {
+    authenticateWithCredentials: authenticateWithCredentials
+  }
 }
