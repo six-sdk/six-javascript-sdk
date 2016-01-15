@@ -2,7 +2,7 @@ const ENDPOINT = 'https://api.six.se/v1'
 
 let fetch = function (token, url, {method, body} = {method: 'GET', body: null}) {
   return new Promise(function (resolve, reject) {
-    let req = new XMLHttpRequest()
+    let req = new window.XMLHttpRequest()
 
     req.onerror = (event) => reject(req)
     req.onload = () => {
@@ -52,17 +52,17 @@ export default function (token) {
       const unsubFn = () => unsubscribe('foo')
 
       fetch(token, resource)
-        .then((response) => callback(null, response, resource, unsubFn))
-        .catch((err) => callback(err, null, resource, unsubFn))
+      .then((response) => window.setTimeout(() => callback(null, response, unsubFn), 0))
+      .catch((err) => window.setTimeout(() => callback(err, null, unsubFn), 0))
 
       return unsubFn
     },
 
     refresh: function refresh (resource) {
-      console.log('refresh',resource)
+      console.log('refresh', resource)
     },
 
-    clearCache: function clearCache() {
+    clearCache: function clearCache () {
       console.log('clearCache')
     }
   }
