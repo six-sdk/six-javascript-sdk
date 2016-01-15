@@ -10,6 +10,7 @@
     "dist": "npm run dist:dev && npm run dist:min",
     "dist:dev": "node node_modules/webpack/bin/webpack",
     "dist:min": "node node_modules/webpack/bin/webpack -p --output-filename six-sdk.min.js",
+    "watch" : "node node_modules/webpack/bin/webpack --watch",
     "lint" : "node ./node_modules/eslint/bin/eslint.js src",
     "clean": "rm -fr dist lib"
   },
