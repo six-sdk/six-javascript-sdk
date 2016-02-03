@@ -1,15 +1,15 @@
-console.log('Loading SDK')
+console.log('Loading Six Javascript SDK')
 
-import connection, {authenticateWithCredentials} from './connection'
+import {DEFAULT_ENDPOINT} from './defaults'
+import session, {authenticateWithCredentials} from './session'
+import internal from './internal'
 
-function connect (token, endpoint) {
+function connect (token, endpoint = DEFAULT_ENDPOINT) {
   console.log('connect with token', token, endpoint)
-  return connection(token,endpoint)
+  return session(token,endpoint)
 }
 
 export default {
   connect: connect,
-  _internal: {
-    authenticateWithCredentials: authenticateWithCredentials
-  }
+  _internal: internal
 }
