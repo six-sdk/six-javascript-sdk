@@ -1,4 +1,4 @@
-const DEFAULT_ENDPOINT = 'https://api.six.se/v1'
+const DEFAULT_ENDPOINT = 'https://api.six.se/v2'
 
 let fetch = function (token, url, endpoint, {method, body} = {method: 'GET', body: null}) {
   return new Promise(function (resolve, reject) {
