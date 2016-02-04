@@ -6,7 +6,7 @@ module.exports = {
     './browser-bundle.js'
   ],
   output: {
-      publicPath: '/',
+      publicPath: '/dist/',
       path: path.join(__dirname,'dist'),
       filename: 'six-sdk.js'
   },

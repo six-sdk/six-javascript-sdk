@@ -11,8 +11,8 @@ function createXHR() {
 
 export const fetch = function fetch (token, url, endpoint, {method, body} = {method: 'GET', body: null}) {
   return new Promise(function (resolve, reject) {
-    //let req = new window.XMLHttpRequest()
-    let req = createXHR()
+    let req = new XMLHttpRequest()
+    //let req = createXHR()
 
     req.onerror = (event) => {
       reject({
