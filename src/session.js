@@ -57,29 +57,12 @@ export default function (token, endpoint) {
 
       // remove resource -> subscription mapping
       resourceToSubscription[subscription.resource] = resourceToSubscription[subscription.resource].filter(s => !(s.id == id))
-
-      // const subs = resourceToSubscription[subscription.resource]
-      // let index =
-      // for (let i=0; i < subs.length; i += 1) {
-      //   if (subs[i].id === id) {
-      //     index = i
-      //     break
-      //   }
-      // }
-      //
-      // console.log('found index',index,subs)
-      //
-      // if (index > -1) {
-      //   subs.splice(index,1)
-      // }
-
-      // TODO: remove entity -> subscription mapping
     }
   }
 
   // merges new data into the cache
   const merge = function(resource,data) {
-    console.log('merge',resource,data)
+    console.log('>>>> merge',resource,data)
     let cached = data
 
     // merge into entityCache
@@ -100,12 +83,58 @@ export default function (token, endpoint) {
       entityToResource[data.url] = mergeIntoArray(entityToResource[data.url],resource)
     }
 
+    // resolve connections with related domain objects
+    cached = mergeRelations(cached)
+
+    // domain specific merge (bid/ask)
+    cached = mergeDomain(cached)
+
     // merge into resourceCache
     // TODO: only cache exact mapping? Or should we cut the query part
-    cached = deepMerge(resourceCache[resource],data)
+    cached = deepMerge(resourceCache[resource],cached)
     resourceCache[resource] = cached
 
     return cached
+  }
+
+  // merges a cached domain object with the rest of the domain
+  // i.e resolves all relations
+  const mergeRelations = function mergeRelations(obj) {
+    if (!obj) return obj
+
+    // de-reference all subresouces
+    for (var field in obj) {
+      if (obj.hasOwnProperty(field) && typeof obj[field] === 'object') {
+        if (obj[field] && obj[field].url) {
+          let cached = entityCache[obj[field].url]
+          if (!cached) entityCache[obj[field].url] = obj[field]
+          obj[field] =  cached || obj[field]
+        }
+      }
+    }
+
+    return obj
+  }
+
+  const mergeDomain = function mergeDomain(obj) {
+    if (!obj) return obj
+
+    // Orderbooks Level 1 Bid/Ask should match Quotes Bid/Ask
+    let listingWithOrderbook = obj.orderbook ? obj: null
+    if (obj.url && obj.url.endsWith("/orderbook")) {
+      listingWithOrderbook = entityCache[obj.url.substr(0,"/orderbook".length)]
+    }
+
+    if (listingWithOrderbook) {
+      if (listingWithOrderbook.quotes && listingWithOrderbook.quotes.bidPrice) {
+        listingWithOrderbook.orderbook.levels[0].bidPrice = listingWithOrderbook.quotes.bidPrice
+      }
+      if (listingWithOrderbook.quotes && listingWithOrderbook.quotes.askPrice) {
+        listingWithOrderbook.orderbook.levels[0].askPrice = listingWithOrderbook.quotes.askPrice
+      }
+    }
+
+    return obj
   }
 
   return {
@@ -124,6 +153,9 @@ export default function (token, endpoint) {
         //merge data into cache
         data = merge(resource,data)
         console.log('merge done',resource,data)
+
+        // TODO: should we give all subscriber a copy of the
+        //       data so they don't pollute the cache by misstake?
 
         // TODO: is there any incitaments to optimize so we don't call callbacks more than once/publish?
 
