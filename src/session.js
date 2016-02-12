@@ -157,13 +157,20 @@ export default function (token, endpoint) {
         // TODO: should we give all subscriber a copy of the
         //       data so they don't pollute the cache by misstake?
 
-        // TODO: is there any incitaments to optimize so we don't call callbacks more than once/publish?
+        // Optimize so we don't call callbacks more than once/publish.
+        // Not strictly neccesary, but helps in tests and debugging
+        const called = Object.create(null) // in lieu of Set
 
         // notify all subscriptions for original resource
         let subscriptions = resourceToSubscription[resource]
         console.log('notify all subscriptions for original resource',subscriptions)
         if (subscriptions) {
-          subscriptions.forEach(s => s.callback(err,data,s.unsubscribeFn))
+          subscriptions.forEach(s => {
+            if (!called[s.id]) {
+              s.callback(err,data,s.unsubscribeFn)
+              called[s.id] = true
+            }
+          })
         }
 
         // notify all subscriptions that have mapping (via entityToResource) to any of the entities
@@ -177,9 +184,12 @@ export default function (token, endpoint) {
             resources.forEach(r => {
               const response = resourceCache[r]
               subscriptions = resourceToSubscription[r]
-              if (subscriptions) {
-                subscriptions.forEach(s => s.callback(err,response,s.unsubscribeFn))
-              }
+              subscriptions.forEach(s => {
+                if (!called[s.id]) {
+                  s.callback(err,response,s.unsubscribeFn)
+                  called[s.id] = true
+                }
+              })
             })
           }
         })
