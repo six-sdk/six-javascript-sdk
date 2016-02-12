@@ -14,7 +14,7 @@ describe.skip('SDK Live Requests', () => {
   let session = false
 
   beforeEach((done) => {
-    SDK._internal.authenticateWithCredentials('six','sixsixsix', (token,err) => {
+    SDK._internal.authenticateWithCredentials('','', (token,err) => {
       session = SDK.connect(token)
       console.log('session ready',token,err)
       done()

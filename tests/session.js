@@ -26,7 +26,7 @@ describe('subscribe(resource,[callback])',() => {
     global.XMLHttpRequest = xhr
   });
 
-  it('fetches from API',(done) => {
+  it('should fetch from API',(done) => {
     session.subscribe('/listings/848',(err,data) => {
       expect(data).to.exist
       expect(data.id).to.equal('848')
@@ -36,14 +36,14 @@ describe('subscribe(resource,[callback])',() => {
     XMLHttpRequest.respondWith(response)
   })
 
-  it('sends correct auth headers',() => {
+  it('should send correct auth headers',() => {
     session.subscribe('/listings/848',() => {})
     let request = XMLHttpRequest.requests[0]
     expect(request.headers).to.exist
     expect(request.headers['Authorization']).to.equal('Bearer '+TOKEN)
   })
 
-  it('sends uses correct endpoint',() => {
+  it('should use correct endpoint',() => {
     let session = SDK.connect(TOKEN,'custom.endpoint')
     session.subscribe('/resource',() => {})
     let request = XMLHttpRequest.requests[0]
@@ -51,7 +51,7 @@ describe('subscribe(resource,[callback])',() => {
     expect(request.url).to.equal('custom.endpoint/resource')
   })
 
-  it('propagates errors',(done) => {
+  it('should propagate errors',(done) => {
     session.subscribe('/listings/848',(err,data) => {
       expect(data).to.not.exist
       expect(err).to.exist
@@ -62,6 +62,34 @@ describe('subscribe(resource,[callback])',() => {
     XMLHttpRequest.respondWithError({})
   })
 
-  it('unsubscribes OK')
-  it('fetches from Cache')
+  it('refresh', (done) => {
+    let calls = 0
+    session.subscribe('/listings/848',(err,data) => {
+      calls++
+      expect(data).to.exist
+      expect(data.id).to.equal('848')
+      if (calls == 2) done()
+    })
+
+    XMLHttpRequest.respondWith(response)
+
+    session.refresh('/listings/848')
+    XMLHttpRequest.respondWith(response)
+  })
+
+
+  it('should unsubscribe OK', (done) => {
+    XMLHttpRequest.respondWith(response)
+    XMLHttpRequest.respondWith(response)
+
+    session.subscribe('/listings/848',(err,data,unsubscribe) => {
+      expect(data).to.exist
+      expect(data.id).to.equal('848')
+      unsubscribe()
+      done()
+    })
+
+    session.refresh('/listings/848')
+  })
+
 })

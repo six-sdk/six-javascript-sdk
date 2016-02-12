@@ -5,11 +5,13 @@
     <body>
         <script type="text/javascript" src="../dist/six-sdk.js" charset="utf-8"></script>
         <script type="text/javascript">
-          Six._internal.authenticateWithCredentials('','', function(token) {
-            window.session = Six.connect(token)
+          Six._internal.authenticateWithCredentials('six','sixsixsix', function(token) {
+            window.session = Six.connect(token,'http://test-frontend07.test.codesense.com:8080/v2')
             console.log('session ready')
-            window.unsub1 = session.subscribe('/listings/848', function(err,data) { console.log('1 > ','data',data,'err',err) })
-            window.unsub2 = session.subscribe('/listings/848', function(err,data) { console.log('2 > ','data',data,'err',err) })
+            //window.unsub1 = session.subscribe('/listings/848', function(err,data) { console.log('(listing) > ','data',data,'err',err) })
+            window.unsub1 = session.subscribe('/listings/848/quotes', function(err,data) { console.log('(quotes) > ','data',data,'err',err) })
+            //window.unsub2 = session.subscribe('/listings/848/orderbook', function(err,data) { console.log('(orderbook) > ','data',data,'err',err) })
+            //window.unsub3 = session.subscribe('/organizations/125', function(err,data) { console.log('(org)','data',data,'err',err) })
 
             // session._internal.publish('/test',{url: "/test-entity"})
             // session._internal.publish('/test',{url: "/test-entity"})
