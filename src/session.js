@@ -43,11 +43,12 @@ export default function (token, endpoint) {
   const resourceCache = {} // resource -> response
   const entityToResource = {} // entity.url -> resource
 
-  window.subscriptions = subscriptions
-  window.resourceToSubscription = resourceToSubscription
-  window.entityCache = entityCache
-  window.resourceCache = resourceCache
-  window.entityToResource = entityToResource
+  // TODO: remove debug refs for release (move to _internal)
+  window.__subscriptions = subscriptions
+  window.__resourceToSubscription = resourceToSubscription
+  window.__entityCache = entityCache
+  window.__resourceCache = resourceCache
+  window.__entityToResource = entityToResource
 
   const unsubscribe = function (id) {
     const subscription = subscriptions[id]
@@ -125,10 +126,10 @@ export default function (token, endpoint) {
     }
 
     if (listingWithOrderbook) {
-      if (listingWithOrderbook.quotes && listingWithOrderbook.quotes.bidPrice) {
+      if (listingWithOrderbook.quotes && listingWithOrderbook.quotes.bidPrice && listingWithOrderbook.orderbook.levels) {
         listingWithOrderbook.orderbook.levels[0].bidPrice = listingWithOrderbook.quotes.bidPrice
       }
-      if (listingWithOrderbook.quotes && listingWithOrderbook.quotes.askPrice) {
+      if (listingWithOrderbook.quotes && listingWithOrderbook.quotes.askPrice && listingWithOrderbook.orderbook.levels) {
         listingWithOrderbook.orderbook.levels[0].askPrice = listingWithOrderbook.quotes.askPrice
       }
     }
