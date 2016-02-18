@@ -6,7 +6,7 @@
 // install Promise polyfill globally
 import 'es6-promise'
 
-// String.endsWith
+// String
 if (!String.prototype.endsWith) {
   String.prototype.endsWith = function(searchString, position) {
       var subjectString = this.toString();
@@ -18,3 +18,10 @@ if (!String.prototype.endsWith) {
       return lastIndex !== -1 && lastIndex === position;
   };
 }
+
+// Number polyfills
+Number.isInteger = Number.isInteger || function(value) {
+  return typeof value === "number" &&
+    isFinite(value) &&
+    Math.floor(value) === value;
+};
