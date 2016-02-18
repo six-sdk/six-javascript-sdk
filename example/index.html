@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
     <head>
         <meta charset="utf-8">
@@ -5,34 +6,21 @@
     <body>
         <script type="text/javascript" src="../dist/six-sdk.js" charset="utf-8"></script>
         <script type="text/javascript">
-          Six._internal.authenticateWithCredentials('six','sixsixsix', function(token) {
-            window.session = Six.connect(token,'http://test-frontend07.test.codesense.com:8080/v2')
-            console.log('session ready')
-            //window.unsub1 = session.subscribe('/listings/848', function(err,data) { console.log('(listing) > ','data',data,'err',err) })
-            window.unsub1 = session.subscribe('/listings/848/quotes', function(err,data) { console.log('(quotes) > ','data',data,'err',err) })
-            //window.unsub2 = session.subscribe('/listings/848/orderbook', function(err,data) { console.log('(orderbook) > ','data',data,'err',err) })
-            //window.unsub3 = session.subscribe('/organizations/125', function(err,data) { console.log('(org)','data',data,'err',err) })
+          var clientId = localStorage['client_id'] || ''
+          var clientSecret = localStorage['client_secret'] || ''
 
-            // session._internal.publish('/test',{url: "/test-entity"})
-            // session._internal.publish('/test',{url: "/test-entity"})
-            // session._internal.publish('/test2',{items: [{url: "/test-entity", foo: "from-test-2"},{url: "/222222"}]})
-            // session._internal.publish('/test2',{items: [{url: "/test-entity", foo: "from-test-2"},{url: "/222222"}]})
-            // session._internal.publish('/test',{url: "/test-entity"})
-            // session._internal.publish('/test2',{items: [{url: "/test-entity", foo: "from-test-2"},{url: "/222222"}]})
+          console.log('client_id',clientId)
+          console.log('client_secret',clientSecret)
 
-
-            // session.subscribe('/test', function(err,data) { console.log('1 > ','data',data,'err',err) })
-            // session.subscribe('/test', function(err,data) { console.log('2 > ','data',data,'err',err) })
-            // session.subscribe('/test2',function(err,data) { console.log('3 > ','data',data,'err',err) })
-            //
-            // session._internal.publish('/test',{url: "/test-entity"})
-            // session._internal.publish('/test',{url: "/test-entity"})
-            // session._internal.publish('/test2',{items: [{url: "/test-entity", foo: "from-test-2"},{url: "/222222"}]})
-            // session._internal.publish('/test2',{items: [{url: "/test-entity", foo: "from-test-2"},{url: "/222222"}]})
-            // session._internal.publish('/test',{url: "/test-entity"})
-            // session._internal.publish('/test2',{items: [{url: "/test-entity", foo: "from-test-2"},{url: "/222222"}]})
-
-          })
+          if (clientId && clientSecret) {
+            Six._internal.authenticateWithCredentials(clientId,clientSecret, function(token) {
+              if (token) {
+                window.session = Six.connect(token)
+                console.log('session ready')
+                window.unsub = session.subscribe('/listings/848/quotes', function(err,data) { console.log('(quotes) > ','data',data,'err',err) })
+              }
+            })
+          }
         </script>
     </body>
 </html>
