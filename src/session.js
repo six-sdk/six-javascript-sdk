@@ -64,8 +64,9 @@ export default function (token, endpoint) {
   const merge = function(resource,data) {
     let cached = data
 
-    // merge into entityCache
+    // handle paginated data
     if (data && data.items) {
+      // merge items into entityCache
       data.items = data.items.map(item => {
         if (item.url) {
           item = deepMerge(entityCache[item.url],item)
@@ -74,19 +75,22 @@ export default function (token, endpoint) {
         }
         return item
       })
+    } else {
+      // merge into entityCache
+      if (data && data.url) {
+        cached = deepMerge(entityCache[data.url],data)
+        entityCache[data.url] = cached
+        entityToResource[data.url] = mergeIntoArray(entityToResource[data.url],resource)
+      }
+
+      // TODO: below must be done also for items in paginated responses
+
+      // resolve connections with related domain objects
+      cached = mergeRelations(cached)
+
+      // domain specific merge (bid/ask)
+      cached = mergeDomain(cached)
     }
-
-    if (data && data.url) {
-      cached = deepMerge(entityCache[data.url],data)
-      entityCache[data.url] = cached
-      entityToResource[data.url] = mergeIntoArray(entityToResource[data.url],resource)
-    }
-
-    // resolve connections with related domain objects
-    cached = mergeRelations(cached)
-
-    // domain specific merge (bid/ask)
-    cached = mergeDomain(cached)
 
     // merge into resourceCache
     // TODO: only cache exact mapping? Or should we cut the query part
@@ -183,12 +187,14 @@ export default function (token, endpoint) {
             resources.forEach(r => {
               const response = resourceCache[r]
               subscriptions = resourceToSubscription[r]
-              subscriptions.forEach(s => {
-                if (!called[s.id]) {
-                  s.callback(err,response,s.unsubscribeFn)
-                  called[s.id] = true
-                }
-              })
+              if (subscriptions) {
+                subscriptions.forEach(s => {
+                  if (!called[s.id]) {
+                    s.callback(err,response,s.unsubscribeFn)
+                    called[s.id] = true
+                  }
+                })
+              }
             })
           }
         })
