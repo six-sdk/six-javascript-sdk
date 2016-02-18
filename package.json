@@ -12,6 +12,7 @@
     "dist:dev": "webpack",
     "dist:min": "webpack -p --output-filename six-sdk.min.js",
     "lint": "eslint src",
+    "check" : "npm run test && npm run lint",
     "clean": "rm -fr dist lib"
   },
   "repository": {
