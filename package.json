@@ -1,6 +1,6 @@
 {
   "name": "six-sdk",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "SIX Javascript SDK",
   "main": "lib",
   "scripts": {
@@ -12,7 +12,7 @@
     "dist:dev": "webpack",
     "dist:min": "webpack -p --output-filename six-sdk.min.js",
     "lint": "eslint src",
-    "check" : "npm run test && npm run lint",
+    "check": "npm run test && npm run lint",
     "clean": "rm -fr dist lib"
   },
   "repository": {
