@@ -52,7 +52,6 @@ export default function (token, endpoint) {
   const unsubscribe = function (id) {
     const subscription = subscriptions[id]
     if (subscription) {
-      console.log('unsubscribe', id, subscription)
       delete subscriptions[id]
 
       // remove resource -> subscription mapping
@@ -62,7 +61,6 @@ export default function (token, endpoint) {
 
   // merges new data into the cache
   const merge = function(resource,data) {
-    console.log('>>>> merge',resource,data)
     let cached = data
 
     // merge into entityCache
@@ -116,6 +114,7 @@ export default function (token, endpoint) {
     return obj
   }
 
+  // domain-specific merge function, handles Bid/Ask syncing etc
   const mergeDomain = function mergeDomain(obj) {
     if (!obj) return obj
 
@@ -143,7 +142,7 @@ export default function (token, endpoint) {
         // on errors, *only* notify all subscriptions for original resource
         if (err) {
           let subscriptions = resourceToSubscription[resource]
-          console.log('notify all subscriptions for original resource',subscriptions)
+          //console.log('notify all subscriptions for original resource',subscriptions)
           if (subscriptions) {
             subscriptions.forEach(s => s.callback(err,data,s.unsubscribeFn))
           }
@@ -152,18 +151,17 @@ export default function (token, endpoint) {
 
         //merge data into cache
         data = merge(resource,data)
-        console.log('merge done',resource,data)
-
-        // TODO: should we give all subscriber a copy of the
-        //       data so they don't pollute the cache by misstake?
 
         // Optimize so we don't call callbacks more than once/publish.
         // Not strictly neccesary, but helps in tests and debugging
         const called = Object.create(null) // in lieu of Set
 
+        // TODO: should we give all subscribers a copy of the data so they don't pollute the cache by misstake?
+        // data = Object.create(data)
+
         // notify all subscriptions for original resource
         let subscriptions = resourceToSubscription[resource]
-        console.log('notify all subscriptions for original resource',subscriptions)
+        //console.log('notify all subscriptions for original resource',subscriptions)
         if (subscriptions) {
           subscriptions.forEach(s => {
             if (!called[s.id]) {
@@ -175,11 +173,11 @@ export default function (token, endpoint) {
 
         // notify all subscriptions that have mapping (via entityToResource) to any of the entities
         const entities = data.items ? data.items : (data.url ? [data] : [])
-        console.log('notify all subscriptions that have mapping to any of the enitities',entities)
+        //console.log('notify all subscriptions that have mapping to any of the enitities',entities)
 
         entities.forEach(entity => {
           const resources = entityToResource[entity.url]
-          console.log('notify for entity',entity.url,resources)
+          //console.log('notify for entity',entity.url,resources)
           if (resources) {
             resources.forEach(r => {
               const response = resourceCache[r]
@@ -201,8 +199,6 @@ export default function (token, endpoint) {
       console.log('subscribe', token, resource, endpoint)
       const sub = {id: nextId(), resource, callback}
 
-      console.log('sub',sub)
-
       // create an Fn to unsubscribe
       sub.unsubscribeFn = () => unsubscribe(sub.id)
 
@@ -213,10 +209,10 @@ export default function (token, endpoint) {
       resourceToSubscription[resource] = resourceToSubscription[resource] || []
       resourceToSubscription[resource].push(sub)
 
-      console.log('resourceToSubscription',resourceToSubscription)
+      //console.log('resourceToSubscription',resourceToSubscription)
 
       if (resourceCache[resource]) {
-        console.log("resource found in cache, notify direct")
+        //console.log("resource found in cache, notify direct")
         callback(null,resourceCache[resource],sub.unsubscribeFn)
         return sub.unsubscribeFn
       }
@@ -236,7 +232,6 @@ export default function (token, endpoint) {
     },
 
     clearCache: function clearCache () {
-      console.log('clearCache')
       for (var prop in entityCache)       { if (entityCache.hasOwnProperty(prop))       { delete entityCache[prop] } }
       for (var prop in resourceCache)     { if (resourceCache.hasOwnProperty(prop))     { delete resourceCache[prop] } }
       for (var prop in entityToResource)  { if (entityToResource.hasOwnProperty(prop))  { delete entityToResource[prop] } }

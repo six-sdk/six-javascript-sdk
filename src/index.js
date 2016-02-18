@@ -7,7 +7,6 @@ import session, {authenticateWithCredentials} from './session'
 import internal from './internal'
 
 function connect (token, endpoint = DEFAULT_ENDPOINT) {
-  //console.log('connect with token', token, endpoint)
   return session(token,endpoint)
 }
 

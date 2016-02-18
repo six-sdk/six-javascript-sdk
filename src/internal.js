@@ -7,7 +7,7 @@ export default {
     fetch(null, '/authorization/token', endpoint, {method: 'POST', body: {client_id: client_id, client_secret: client_secret}})
       .then(({access_token}) => {
         window.TOKEN = access_token
-        console.log('got token ', access_token)
+        console.log('authenticateWithCredentials received token ', access_token)
         if (callback) {
           callback(access_token)
         }
