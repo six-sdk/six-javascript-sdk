@@ -97,7 +97,7 @@ export default function (token, endpoint) {
   const mergeRelations = function mergeRelations(obj) {
     if (!obj) return obj
 
-    // de-reference all subresouces
+    // dereference all subresources
     for (var field in obj) {
       if (obj.hasOwnProperty(field) && typeof obj[field] === 'object') {
         if (obj[field] && obj[field].url) {
@@ -147,7 +147,7 @@ export default function (token, endpoint) {
       _entityCache: entityCache,
       _resourceCache: resourceCache,
       _entityToResource: entityToResource,
-      
+
       publish: function(resource,data,err) {
         // on errors, *only* notify all subscriptions for original resource
         if (err) {
