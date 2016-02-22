@@ -43,13 +43,6 @@ export default function (token, endpoint) {
   const resourceCache = {} // resource -> response
   const entityToResource = {} // entity.url -> resource
 
-  // TODO: remove debug refs for release (move to _internal)
-  window.__subscriptions = subscriptions
-  window.__resourceToSubscription = resourceToSubscription
-  window.__entityCache = entityCache
-  window.__resourceCache = resourceCache
-  window.__entityToResource = entityToResource
-
   const unsubscribe = function (id) {
     const subscription = subscriptions[id]
     if (subscription) {
@@ -93,7 +86,6 @@ export default function (token, endpoint) {
     }
 
     // merge into resourceCache
-    // TODO: only cache exact mapping? Or should we cut the query part
     cached = deepMerge(resourceCache[resource],cached)
     resourceCache[resource] = cached
 
@@ -150,6 +142,12 @@ export default function (token, endpoint) {
 
   return {
     _internal: {
+      _subscriptions: subscriptions,
+      _resourceToSubscription: resourceToSubscription,
+      _entityCache: entityCache,
+      _resourceCache: resourceCache,
+      _entityToResource: entityToResource,
+      
       publish: function(resource,data,err) {
         // on errors, *only* notify all subscriptions for original resource
         if (err) {
