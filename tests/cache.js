@@ -6,6 +6,9 @@ import FakeXMLHttpRequest from './fake-xml-http-request'
 
 import SDK from '../src'
 
+// enable global debug logging
+//SDK.debug = true
+
 global.window = global || {}
 
 export const defer = function defer(fn) {
@@ -136,8 +139,6 @@ describe('cache',() => {
   })
 
   it('should support two subscribers for same entity resource with missing urls',(done) => {
-    const QUOTES = {url: '/listings/848/quotes'}
-
     // queue up some responses
     XMLHttpRequest.respondWith({xyz: 'abc'})
     XMLHttpRequest.respondWith({foo: 'bar'})
@@ -154,20 +155,318 @@ describe('cache',() => {
     })
   })
 
-  it('missing urls')
-  it('missing urls, same resource')
-  it('resources with query strings')
-  it('bid/ask orderbooks')
+  it('resources with query strings', (done) => {
+    // queue up some diffrent responses
+    XMLHttpRequest.respondWith({xyz: 'abc'})
+    XMLHttpRequest.respondWith({foo: 'bar'})
 
-  // it('should propagate errors to all subscribers of the resource',(done) => {
-  //   session.subscribe('/listings/848',(err,data) => {
-  //     expect(data).to.not.exist
-  //     expect(err).to.exist
-  //     expect(err.code).to.equal('AJAX_ERROR')
-  //     done()
-  //   })
-  //
-  //   XMLHttpRequest.respondWithError({})
-  // })
+    let called = 0
+    session.subscribe('/resource?filter=foo',(e,listing) => {
+      session.subscribe('/resource?filter=bar',(e,listing2) => {
+        if (called++) return // ignore second call
+        expect(listing).to.exist
+        expect(listing.xyz).to.exist
+        expect(listing.foo).to.not.exist
+
+        expect(listing2).to.exist
+        expect(listing2.foo).to.exist
+        expect(listing2.xyz).to.not.exist
+
+        expect(listing === listing2).to.be.false
+        done()
+      })
+    })
+  })
+
+  it('resources with query strings for the same entity', (done) => {
+    // queue up some diffrent responses
+    XMLHttpRequest.respondWith({xyz: 'abc', url: '/resource'})
+    XMLHttpRequest.respondWith({foo: 'bar', url: '/resource'})
+
+    let called = 0
+    session.subscribe('/resource?filter=foo',(e,listing) => {
+      session.subscribe('/resource?filter=bar',(e,listing2) => {
+        if (called++) return // ignore second call
+        expect(listing === listing2).to.be.true
+
+        expect(listing).to.exist
+        expect(listing2).to.exist
+
+        expect(listing2.foo).to.exist
+        expect(listing2.xyz).to.exist
+
+        done()
+      })
+    })
+  })
+
+
+  describe('bid/ask orderbooks should have synced Bid/Ask with Level 1', () => {
+    // listing with both quote + orderbook
+    it('listing with both quotes + orderbook', (done) => {
+      // queue up some responses
+      XMLHttpRequest.respondWith({
+        url: '/listings/848',
+        orderbook: {
+          url: '/listings/848/orderbook'
+        },
+        quotes: {
+          askPrice: 10,
+          bidPrice: 20
+        },
+        orderbook: {
+          url: '/listings/848/orderbook',
+          levels: [{
+            level: 1,
+            askPrice: 2,
+            bidPrice: 3,
+            askVolume: 9999,
+            bidVolume: 9999,
+            askOrders: 9,
+            bidOrders: 9
+          }]
+        }
+      })
+
+      session.subscribe('/listing/848',(e,listing) => {
+        expect(listing).to.exist
+        expect(listing.orderbook).to.exist
+        expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+        expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+        done()
+      })
+    })
+
+
+    // quote + orderbook
+    it('handle listing, orderbook', (done) => {
+      // queue up some responses
+      XMLHttpRequest.respondWith({
+        url: '/listings/848',
+        orderbook: {
+          url: '/listings/848/orderbook'
+        },
+        quotes: {
+          askPrice: 10,
+          bidPrice: 20
+        }})
+      XMLHttpRequest.respondWith({
+        url: '/listings/848/orderbook',
+        levels: [{
+          level: 1,
+          askPrice: 2,
+          bidPrice: 3,
+          askVolume: 9999,
+          bidVolume: 9999,
+          askOrders: 9,
+          bidOrders: 9
+        }
+        ]})
+
+      session.subscribe('/listing/848',(e,listing) => {
+        session.subscribe('/listing/848/orderbook',(e,orderbook) => {
+          expect(listing).to.exist
+          expect(listing.orderbook).to.exist
+          expect(listing.orderbook === orderbook).be.true
+          expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+          expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+
+          done()
+        })
+      })
+    })
+
+    it('handle listing (no orderbook ref), orderbook ()', (done) => {
+      // queue up some responses
+      XMLHttpRequest.respondWith({
+        url: '/listings/848',
+        quotes: {
+          askPrice: 10,
+          bidPrice: 20
+        }})
+      XMLHttpRequest.respondWith({
+        url: '/listings/848/orderbook',
+        levels: [{
+          level: 1,
+          askPrice: 2,
+          bidPrice: 3,
+          askVolume: 9999,
+          bidVolume: 9999,
+          askOrders: 9,
+          bidOrders: 9
+        }
+        ]})
+
+      session.subscribe('/listing/848',(e,listing) => {
+        session.subscribe('/listing/848/orderbook',(e,orderbook) => {
+          expect(listing).to.exist
+          expect(listing.orderbook).to.exist
+          expect(listing.orderbook === orderbook).be.true
+          expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+          expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+
+          done()
+        })
+      })
+    })
+
+    it('handle listing (fields=orderbook), orderbook', (done) => {
+      // queue up some responses
+      XMLHttpRequest.respondWith({
+        url: '/listings/848',
+        quotes: {
+          askPrice: 10,
+          bidPrice: 20
+        },
+        orderbook: {
+          url: '/listings/848/orderbook',
+          levels: [{
+            level: 1,
+            askPrice: 11,
+            bidPrice: 22,
+            askVolume: 9999,
+            bidVolume: 9999,
+            askOrders: 9,
+            bidOrders: 9
+          }
+          ]}
+      })
+
+      XMLHttpRequest.respondWith({
+        url: '/listings/848/orderbook',
+        levels: [{
+          level: 1,
+          askPrice: 2,
+          bidPrice: 3,
+          askVolume: 9999,
+          bidVolume: 9999,
+          askOrders: 9,
+          bidOrders: 9
+        }
+        ]})
+
+      session.subscribe('/listing/848',(e,listing) => {
+        session.subscribe('/listing/848/orderbook',(e,orderbook) => {
+          expect(listing).to.exist
+          expect(listing.orderbook).to.exist
+          expect(listing.orderbook === orderbook).be.true
+          expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+          expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+
+          done()
+        })
+      })
+    })
+
+    // orderbook + quote
+    it('handle orderbook, listing', (done) => {
+      // queue up some responses
+      XMLHttpRequest.respondWith({
+        url: '/listings/848/orderbook',
+        levels: [{
+          level: 1,
+          askPrice: 2,
+          bidPrice: 3,
+          askVolume: 9999,
+          bidVolume: 9999,
+          askOrders: 9,
+          bidOrders: 9
+        }
+        ]})
+
+      XMLHttpRequest.respondWith({
+        url: '/listings/848',
+        quotes: {
+          askPrice: 10,
+          bidPrice: 20
+        },
+        orderbook: {
+          url: '/listings/848/orderbook'
+        }
+      })
+
+      session.subscribe('/listing/848/orderbook',(e,orderbook) => {
+        session.subscribe('/listing/848',(e,listing) => {
+          expect(listing).to.exist
+          expect(listing.orderbook).to.exist
+          expect(listing.orderbook === orderbook).be.true
+          expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+          expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+
+          done()
+        })
+      })
+    })
+
+    it('handle listing, orderbook, listing', (done) => {
+      // queue up some responses
+      XMLHttpRequest.respondWith({
+        url: '/listings/848',
+        orderbook: {
+          url: '/listings/848/orderbook'
+        },
+        quotes: {
+          askPrice: 10,
+          bidPrice: 20
+        }})
+
+      XMLHttpRequest.respondWith({
+        url: '/listings/848/orderbook',
+        levels: [{
+          level: 1,
+          askPrice: 2,
+          bidPrice: 3,
+          askVolume: 9999,
+          bidVolume: 9999,
+          askOrders: 9,
+          bidOrders: 9
+        }
+        ]})
+
+        XMLHttpRequest.respondWith({
+          url: '/listings/848',
+          orderbook: {
+            url: '/listings/848/orderbook'
+          },
+          quotes: {
+            askPrice: 100,
+            bidPrice: 200
+          }})
+
+      let calls = 0
+
+      session.subscribe('/listings/848',(e,listing) => {
+        session.subscribe('/listings/848/orderbook',(e,orderbook) => {
+          calls++
+
+          expect(listing).to.exist
+          expect(listing.orderbook).to.exist
+          expect(listing.orderbook === orderbook).be.true
+          expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+          expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+
+          if (calls == 1) {
+            session.refresh('/listings/848')
+            return
+          }
+
+          done()
+        })
+      })
+    })
+
+    // listing + orderbook (with missing fields)
+  })
+
+  it('should propagate errors to all subscribers of the resource',(done) => {
+    session.subscribe('/listings/848',(err,data) => {
+      expect(data).to.not.exist
+      expect(err).to.exist
+      expect(err.code).to.equal('AJAX_ERROR')
+      done()
+    })
+
+    XMLHttpRequest.respondWithError({})
+  })
 
 })
