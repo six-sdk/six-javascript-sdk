@@ -125,8 +125,15 @@ export default function (token, endpoint) {
 
     // Orderbooks Level 1 Bid/Ask should match Quotes Bid/Ask
     let listingWithOrderbook = obj.orderbook ? obj: null
+
+    // special handling for "naked" orderbooks
     if (obj.url && obj.url.endsWith("/orderbook")) {
-      listingWithOrderbook = entityCache[obj.url.substr(0,"/orderbook".length)]
+      let entityUrl = obj.url.substring(0,obj.url.length - "/orderbook".length)
+      listingWithOrderbook = entityCache[entityUrl]
+
+      if (listingWithOrderbook && (!listingWithOrderbook.orderbook)) {
+        listingWithOrderbook.orderbook = obj
+      }
     }
 
     if (listingWithOrderbook) {
@@ -203,7 +210,7 @@ export default function (token, endpoint) {
     },
 
     subscribe: function subscribe (resource, callback) {
-      console.log('subscribe', token, resource, endpoint)
+      this.debug && console.log('subscribe', token, resource, endpoint)
       const sub = {id: nextId(), resource, callback}
 
       // create an Fn to unsubscribe
@@ -232,7 +239,7 @@ export default function (token, endpoint) {
     },
 
     refresh: function refresh (resource) {
-      console.log('refresh', resource)
+      this.debug && console.log('refresh', resource)
       fetch(token, resource, endpoint)
       .then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
       .catch((err) => setTimeout(() => this._internal.publish(resource,null,err), 0))
