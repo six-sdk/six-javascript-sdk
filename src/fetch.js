@@ -51,7 +51,8 @@ export const fetch = function fetch (token, url, endpoint, {method, body} = {met
       req.setRequestHeader('Authorization', 'Bearer ' + token)
     }
     if (body) {
-      req.send(JSON.stringify(body))
+      let content = (Object.prototype.toString.call(body) === '[object String]') ? body : JSON.stringify(body)
+      req.send(content)
     } else {
       req.send()
     }
