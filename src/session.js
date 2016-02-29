@@ -251,7 +251,6 @@ export default function (token, endpoint) {
       this.debug && console.log('refresh', resource, content)
       let promise = fetch(token, resource, endpoint, {method: 'POST', body: content})
       promise.then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
-      promise.catch((err) => setTimeout(() => this._internal.publish(resource,null,err), 0))
       return promise
     },
 
@@ -259,7 +258,6 @@ export default function (token, endpoint) {
       this.debug && console.log('update', resource, content)
       let promise = fetch(token, resource, endpoint, {method: 'PUT', body: content})
       promise.then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
-      promise.catch((err) => setTimeout(() => this._internal.publish(resource,null,err), 0))
       return promise
     },
 
@@ -271,8 +269,6 @@ export default function (token, endpoint) {
         delete resourceCache[resource]
         this._internal.publish(resource,null,null)
       }, 0))
-
-      promise.catch((err) => setTimeout(() => this._internal.publish(resource,null,err), 0))
 
       return promise
     },
