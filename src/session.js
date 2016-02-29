@@ -163,7 +163,7 @@ export default function (token, endpoint) {
         data = merge(resource,data)
 
         // Optimize so we don't call callbacks more than once/publish.
-        // Not strictly neccesary, but helps in tests and debugging
+        // Not strictly necessary, but helps in tests and debugging
         const called = Object.create(null) // in lieu of Set
 
         // TODO: should we give all subscribers a copy of the data so they don't pollute the cache by misstake?
@@ -203,7 +203,11 @@ export default function (token, endpoint) {
             })
           }
         })
+      },
 
+      fetch: function(resource,callback) {
+        this.debug && console.log('fetch', resource)
+        return fetch(token, resource, endpoint)
       },
     },
 
@@ -242,6 +246,38 @@ export default function (token, endpoint) {
       .then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
       .catch((err) => setTimeout(() => this._internal.publish(resource,null,err), 0))
     },
+
+    // (token, url, endpoint, {method, body} = {method: 'GET', body: null})
+    create: function refresh (resource,content) {
+      this.debug && console.log('refresh', resource, content)
+      let promise = fetch(token, resource, endpoint, {method: 'POST', body: content})
+      promise.then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
+      promise.catch((err) => setTimeout(() => this._internal.publish(resource,null,err), 0))
+      return promise
+    },
+
+    update: function refresh (resource,content) {
+      this.debug && console.log('update', resource, content)
+      let promise = fetch(token, resource, endpoint, {method: 'PUT', body: content})
+      promise.then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
+      promise.catch((err) => setTimeout(() => this._internal.publish(resource,null,err), 0))
+      return promise
+    },
+
+    remove: function refresh (resource) {
+      this.debug && console.log('remove', resource, content)
+      let promise = fetch(token, resource, endpoint, {method: 'DELETE', body: null})
+
+      promise.then((response) => setTimeout(() => {
+        delete resourceCache[resource]
+        this._internal.publish(resource,null,null)
+      }, 0))
+
+      promise.catch((err) => setTimeout(() => this._internal.publish(resource,null,err), 0))
+
+      return promise
+    },
+
 
     clearCache: function clearCache () {
       for (var prop in entityCache)       { if (entityCache.hasOwnProperty(prop))       { delete entityCache[prop] } }
