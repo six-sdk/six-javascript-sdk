@@ -182,27 +182,29 @@ export default function (token, endpoint) {
         }
 
         // notify all subscriptions that have mapping (via entityToResource) to any of the entities
-        const entities = data.items ? data.items : (data.url ? [data] : [])
-        //console.log('notify all subscriptions that have mapping to any of the enitities',entities)
+        if (data) {
+          const entities = data.items ? data.items : (data.url ? [data] : [])
+          //console.log('notify all subscriptions that have mapping to any of the enitities',entities)
 
-        entities.forEach(entity => {
-          const resources = entityToResource[entity.url]
-          //console.log('notify for entity',entity.url,resources)
-          if (resources) {
-            resources.forEach(r => {
-              const response = resourceCache[r]
-              subscriptions = resourceToSubscription[r]
-              if (subscriptions) {
-                subscriptions.forEach(s => {
-                  if (!called[s.id]) {
-                    s.callback(err,response,s.unsubscribeFn)
-                    called[s.id] = true
-                  }
-                })
-              }
-            })
-          }
-        })
+          entities.forEach(entity => {
+            const resources = entityToResource[entity.url]
+            //console.log('notify for entity',entity.url,resources)
+            if (resources) {
+              resources.forEach(r => {
+                const response = resourceCache[r]
+                subscriptions = resourceToSubscription[r]
+                if (subscriptions) {
+                  subscriptions.forEach(s => {
+                    if (!called[s.id]) {
+                      s.callback(err,response,s.unsubscribeFn)
+                      called[s.id] = true
+                    }
+                  })
+                }
+              })
+            }
+          })
+        }
       },
 
       fetch: function(resource,callback) {
@@ -262,7 +264,7 @@ export default function (token, endpoint) {
     },
 
     remove: function refresh (resource) {
-      this.debug && console.log('remove', resource, content)
+      this.debug && console.log('remove', resource)
       let promise = fetch(token, resource, endpoint, {method: 'DELETE', body: null})
 
       promise.then((response) => setTimeout(() => {

@@ -27,7 +27,24 @@ export const fetch = function fetch (token, url, endpoint, {method, body} = {met
 
     req.onload = () => {
       if (req.status >= 200 && req.status < 400) {
-        resolve(JSON.parse(req.responseText))
+        // The 204 response MUST NOT include a message-body ...
+        if (req.status === 204) {
+            resolve(null)
+        }
+
+        try {
+          resolve(JSON.parse(req.responseText))
+        } catch (e) {
+          reject({
+            code: "INVALID_RESPONSE",
+            title: "Response isn't valid JSON",
+            description: "The response couldn't be parsed into an Javascript object. Check that the endpoint is valid?",
+            details: {
+              endpoint: endpoint,
+              responseText: req.responseText
+            }
+          })
+        }
       } else {
         try {
           reject(JSON.parse(req.responseText))
