@@ -1,4 +1,5 @@
-console.log('Loading Six Javascript SDK')
+import VersionInfo from './meta-version'
+console.log(`Loading Six Javascript SDK ${VersionInfo.version} (${VersionInfo.git.short})`)
 
 import './polyfills'
 
