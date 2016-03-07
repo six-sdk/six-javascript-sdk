@@ -10,8 +10,6 @@
 // }
 
 export const fetch = function fetch (token, url, endpoint, context, {method, body} = {method: 'GET', body: null}) {
-  console.log('fetch with context',context)
-
   return new Promise(function (resolve, reject) {
     let req = new XMLHttpRequest()
 
