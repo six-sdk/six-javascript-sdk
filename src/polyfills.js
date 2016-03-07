@@ -1,6 +1,6 @@
 // This module contains polyfills installed in the global scope.
 
-// The decisions regarding polyfills are final, we may, or may not remove them from the global scope,
+// Polyfills are not final, we may, or may not remove them from the global scope,
 // and we may use a more complete polyfill, such as core.js
 
 // install Promise polyfill globally

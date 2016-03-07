@@ -1,18 +1,19 @@
-function createXHR() {
-  var xhr = new XMLHttpRequest();
-  if ("withCredentials" in xhr) {
-    // Most browsers.
-  } else if (typeof XDomainRequest != "undefined") {
-    // IE8 & IE9
-    xhr = new XDomainRequest();
-  }
-  return xhr;
-}
+// function createXHR() {
+//   var xhr = new XMLHttpRequest();
+//   if ("withCredentials" in xhr) {
+//     // Most browsers.
+//   } else if (typeof XDomainRequest != "undefined") {
+//     // IE8 & IE9
+//     xhr = new XDomainRequest();
+//   }
+//   return xhr;
+// }
 
-export const fetch = function fetch (token, url, endpoint, {method, body} = {method: 'GET', body: null}) {
+export const fetch = function fetch (token, url, endpoint, context, {method, body} = {method: 'GET', body: null}) {
+  console.log('fetch with context',context)
+
   return new Promise(function (resolve, reject) {
     let req = new XMLHttpRequest()
-    //let req = createXHR()
 
     req.onerror = (event) => {
       reject({
@@ -64,9 +65,15 @@ export const fetch = function fetch (token, url, endpoint, {method, body} = {met
 
     req.open(method, endpoint + url, true)
     req.setRequestHeader('Content-Type', 'application/json')
+
     if (token) {
       req.setRequestHeader('Authorization', 'Bearer ' + token)
     }
+
+    if (context) {
+      req.setRequestHeader('Context', window.btoa(JSON.stringify(context)))
+    }
+
     if (body) {
       let content = (Object.prototype.toString.call(body) === '[object String]') ? body : JSON.stringify(body)
       req.send(content)

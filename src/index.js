@@ -9,7 +9,7 @@ import internal from './internal'
 export default {
   _internal: internal,
   connect: function connect (token, endpoint = DEFAULT_ENDPOINT) {
-    const s = session(token,endpoint)
+    const s = session(token, endpoint)
     s.debug = this.debug
     return s
   }

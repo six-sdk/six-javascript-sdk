@@ -1,4 +1,5 @@
 import {fetch} from './fetch'
+import VersionInfo from './meta-version'
 
 const deepMerge = function deepMerge (target, source) {
   if (!target) return source
@@ -147,6 +148,7 @@ export default function (token, endpoint) {
       _entityCache: entityCache,
       _resourceCache: resourceCache,
       _entityToResource: entityToResource,
+      _context: {sdk: VersionInfo.version },
 
       publish: function(resource,data,err) {
         // on errors, *only* notify all subscriptions for original resource
@@ -209,7 +211,7 @@ export default function (token, endpoint) {
 
       fetch: function(resource,callback) {
         this.debug && console.log('fetch', resource)
-        return fetch(token, resource, endpoint)
+        return fetch(token, resource, endpoint, this._context)
       },
     },
 
@@ -226,9 +228,9 @@ export default function (token, endpoint) {
       // resource -> subscription (exact mapping)
       resourceToSubscription[resource] = resourceToSubscription[resource] || []
       resourceToSubscription[resource].push(sub)
-
       //console.log('resourceToSubscription',resourceToSubscription)
 
+      // check cache for this resource
       if (resourceCache[resource]) {
         //console.log("resource found in cache, notify direct")
         callback(null,resourceCache[resource],sub.unsubscribeFn)
@@ -244,28 +246,28 @@ export default function (token, endpoint) {
 
     refresh: function refresh (resource) {
       this.debug && console.log('refresh', resource)
-      fetch(token, resource, endpoint)
+      fetch(token, resource, endpoint, this._internal._context)
       .then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
       .catch((err) => setTimeout(() => this._internal.publish(resource,null,err), 0))
     },
 
     create: function refresh (resource,content) {
       this.debug && console.log('refresh', resource, content)
-      let promise = fetch(token, resource, endpoint, {method: 'POST', body: content})
+      let promise = fetch(token, resource, endpoint, this._internal._context, {method: 'POST', body: content})
       promise.then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
       return promise
     },
 
     update: function refresh (resource,content) {
       this.debug && console.log('update', resource, content)
-      let promise = fetch(token, resource, endpoint, {method: 'PUT', body: content})
+      let promise = fetch(token, resource, endpoint, this._internal._context, {method: 'PUT', body: content})
       promise.then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
       return promise
     },
 
     remove: function refresh (resource) {
       this.debug && console.log('remove', resource)
-      let promise = fetch(token, resource, endpoint, {method: 'DELETE', body: null})
+      let promise = fetch(token, resource, endpoint, this._internal._context, {method: 'DELETE', body: null})
 
       promise.then((response) => setTimeout(() => {
         delete resourceCache[resource]
@@ -275,11 +277,17 @@ export default function (token, endpoint) {
       return promise
     },
 
-
     clearCache: function clearCache () {
       for (var prop in entityCache)       { if (entityCache.hasOwnProperty(prop))       { delete entityCache[prop] } }
       for (var prop in resourceCache)     { if (resourceCache.hasOwnProperty(prop))     { delete resourceCache[prop] } }
       for (var prop in entityToResource)  { if (entityToResource.hasOwnProperty(prop))  { delete entityToResource[prop] } }
+    },
+
+    withContext: function withContext (context) {
+      let newSession = Object.create(this)
+      newSession._internal = Object.create(this._internal)
+      newSession._internal._context = Object.assign({}, this._internal._context, context)
+      return newSession
     }
   }
 }
