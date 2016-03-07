@@ -48,4 +48,7 @@ function FakeXMLHttpRequest() {
   }
 }
 
+// nodejs fill for btoa
+global.btoa = function (str) {return new Buffer(str).toString('base64');};
+
 export default FakeXMLHttpRequest

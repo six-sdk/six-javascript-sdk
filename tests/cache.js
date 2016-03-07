@@ -42,6 +42,7 @@ describe('cache',() => {
     session.subscribe('/listing/848',(e,listing) => {
       session.subscribe('/listing/848',(e,listing2) => {
         if (called++) return // ignore second call
+        expect(e).to.be.null
         expect(listing).to.exist
         expect(listing2).to.exist
         expect(listing === listing2).to.be.true

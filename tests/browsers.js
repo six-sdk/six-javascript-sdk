@@ -41,5 +41,5 @@ if (process.env.CLIENT_ID && process.env.CLIENT_SECRET) {
   })
 
 } else {
-  console.log("Missing CLIENT_Id and CLIENT_SECRET from env, so we skip the \"Live\" tests")
+  console.log("Missing CLIENT_ID and CLIENT_SECRET from env, so we skip the \"Live\" tests")
 }
