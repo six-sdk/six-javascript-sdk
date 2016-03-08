@@ -25,6 +25,10 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
     }
 
     req.onload = () => {
+      // Content-Type
+      const contentType = req.getResponseHeader('Content-Type') || 'text/plain'
+
+      // status OK?
       if (req.status >= 200 && req.status < 400) {
         // The 204 response MUST NOT include a message-body ...
         if (req.status === 204) {
@@ -32,7 +36,11 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
         }
 
         try {
-          resolve(JSON.parse(req.responseText))
+          if (contentType.startsWith('text/plain')) {
+            resolve(req.responseText)
+          } else {
+            resolve(JSON.parse(req.responseText))
+          }
         } catch (e) {
           reject({
             code: "INVALID_RESPONSE",
@@ -46,7 +54,11 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
         }
       } else {
         try {
-          reject(JSON.parse(req.responseText))
+          if (contentType.startsWith('text/plain')) {
+            resolve(req.responseText)
+          } else {
+            resolve(JSON.parse(req.responseText))
+          }
         } catch (e) {
           reject({
             code: "INVALID_RESPONSE",
