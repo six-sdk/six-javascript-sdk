@@ -9,12 +9,14 @@
     "compile": "babel src --out-dir lib ",
     "test": "npm run prepare && mocha --compilers js:babel-register --recursive ./tests",
     "push:npm": "npm run prepare && npm run compile && npm publish",
+    "push:cdn": "npm run dist && node ./bin/push-cdn",
     "dist": "npm run prepare && npm run dist:dev && npm run dist:min",
     "dist:dev": "webpack",
     "dist:min": "webpack -p --output-filename six-sdk.min.js",
     "lint": "eslint src",
     "check": "npm run test && npm run lint",
-    "clean": "rm -fr dist lib"
+    "clean": "rm -fr dist lib",
+    "deploy": "npm install && npm run push:cdn && npm run push:npm"
   },
   "repository": {
     "type": "git",
@@ -47,6 +49,7 @@
     "jsdom": "^8.0.2",
     "mocha": "^2.4.5",
     "mocha-jsdom": "^1.0.0",
+    "semver": "^5.1.0",
     "sinon": "^1.17.3",
     "webpack": "^1.12.9",
     "webpack-dev-server": "^1.14.1"
