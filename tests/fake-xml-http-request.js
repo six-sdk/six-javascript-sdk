@@ -22,6 +22,10 @@ function FakeXMLHttpRequest() {
       request.headers[header] = request.headers[header] ? [request.headers[header],value] : value
     }
 
+    getResponseHeader(header) {
+      return 'application/json'
+    }
+
     static respondWith(response = {}, status = 200) {
       responses.push(function(request) {
         request.instance.responseText = (typeof response === 'string' || response instanceof String) ? response : JSON.stringify(response)

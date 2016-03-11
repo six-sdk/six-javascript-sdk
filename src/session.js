@@ -103,8 +103,15 @@ export default function (token, endpoint) {
       if (obj.hasOwnProperty(field) && typeof obj[field] === 'object') {
         if (obj[field] && obj[field].url) {
           let cached = entityCache[obj[field].url]
-          if (!cached) entityCache[obj[field].url] = obj[field]
+          if (!cached) {
+            entityCache[obj[field].url] = obj[field]
+          }
           obj[field] =  cached || obj[field]
+
+          // connect subresources back to parent
+          if (obj.url) {
+            obj[field]._parent = obj.url
+          }
         }
       }
     }
@@ -154,7 +161,6 @@ export default function (token, endpoint) {
         // on errors, *only* notify all subscriptions for original resource
         if (err) {
           let subscriptions = resourceToSubscription[resource]
-          //console.log('notify all subscriptions for original resource',subscriptions)
           if (subscriptions) {
             subscriptions.forEach(s => s.callback(err,data,s.unsubscribeFn))
           }
@@ -169,32 +175,85 @@ export default function (token, endpoint) {
         const called = Object.create(null) // in lieu of Set
 
         // TODO: should we give all subscribers a copy of the data so they don't pollute the cache by misstake?
-        // data = Object.create(data)
 
         // notify all subscriptions for original resource
-        let subscriptions = resourceToSubscription[resource]
-        //console.log('notify all subscriptions for original resource',subscriptions)
+        // (not all responses contains an .url field we can map to entities)
+        const subscriptions = resourceToSubscription[resource]
         if (subscriptions) {
-          subscriptions.forEach(s => {
-            if (!called[s.id]) {
-              s.callback(err,data,s.unsubscribeFn)
-              called[s.id] = true
+          subscriptions.forEach(subscription => {
+            if (!called[subscription.id]) {
+              subscription.callback(err,data,subscription.unsubscribeFn)
+              called[subscription.id] = true
             }
           })
         }
 
-        // notify all subscriptions that have mapping (via entityToResource) to any of the entities
-        if (data) {
-          const entities = data.items ? data.items : (data.url ? [data] : [])
-          //console.log('notify all subscriptions that have mapping to any of the enitities',entities)
+        // we need to find the 'root' entity to figure out who to notify
+        // i.e publish(/listings/848/orderbook) should notify subscribers of
+        // /listings/848 <-- This is the root
+        // /listings/848/quotes
+        // /listings/848/orderbok
+        // etc
+        //
+        // We find the root by looking for an _parent reference
+        const rootEntity = data._parent || data.url
 
-          entities.forEach(entity => {
-            const resources = entityToResource[entity.url]
-            //console.log('notify for entity',entity.url,resources)
+        if (rootEntity) {
+          const root = entityCache[rootEntity]
+          if (root && root.url) {
+            // notify all subscribers for the root entity itself
+            const resources = entityToResource[root.url]
             if (resources) {
               resources.forEach(r => {
                 const response = resourceCache[r]
-                subscriptions = resourceToSubscription[r]
+                const subscriptions = resourceToSubscription[r]
+                if (subscriptions) {
+                  subscriptions.forEach(s => {
+                    if (!called[s.id]) {
+                      s.callback(err,response,s.unsubscribeFn)
+                      called[s.id] = true
+                    }
+                  })
+                }
+              })
+            }
+
+            // next we traverse the root object looking for references to entities
+            // (fields containing object with .url fields)
+            // for each reference found we notify any subscribers
+            Object.keys(root).forEach(field => {
+              if (root[field].url) {
+                const resources = entityToResource[root[field].url]
+                if (resources) {
+                  resources.forEach(resource => {
+                    let subscriptions = resourceToSubscription[resource]
+                    if (subscriptions) {
+                      subscriptions.forEach(subscription => {
+                        if (!called[subscription.id]) {
+                          subscription.callback(err,resourceCache[resource],subscription.unsubscribeFn)
+                          called[subscription.id] = true
+                        }
+                      })
+                    }
+                  })
+                }
+              }
+            })
+
+          }
+        }
+
+        // if we are publishing a collection-like (population) resource, we need to iterate over
+        // all the contained entities and notify all subscribers
+        if (data) {
+          const entities = data.items ? data.items : (data.url ? [data] : [])
+
+          entities.forEach(entity => {
+            const resources = entityToResource[entity.url]
+            if (resources) {
+              resources.forEach(r => {
+                const response = resourceCache[r]
+                let subscriptions = resourceToSubscription[r]
                 if (subscriptions) {
                   subscriptions.forEach(s => {
                     if (!called[s.id]) {

@@ -33,14 +33,14 @@ describe('cache',() => {
   });
 
   it('should support two subscribers for same entity resource',(done) => {
-    const QUOTES = {url: '/listings/848/quotes'}
+    const LISTING = {url: '/listings/848'}
 
     // queue up some responses
-    XMLHttpRequest.respondWith(QUOTES)
+    XMLHttpRequest.respondWith(LISTING)
 
     let called = 0
-    session.subscribe('/listing/848',(e,listing) => {
-      session.subscribe('/listing/848',(e,listing2) => {
+    session.subscribe('/listings/848',(e,listing) => {
+      session.subscribe('/listings/848',(e,listing2) => {
         if (called++) return // ignore second call
         expect(e).to.be.null
         expect(listing).to.exist
@@ -129,14 +129,16 @@ describe('cache',() => {
     XMLHttpRequest.respondWith(LISTING)
     XMLHttpRequest.respondWith(QUOTES)
 
-    session.subscribe('/listing/848',(e,listing) => {
-      session.subscribe('/listing/848/quotes',(e,quotes) => {
-        expect(listing).to.exist
-        expect(quotes).to.exist
-        expect(listing.quotes === quotes).to.be.true
-        done()
-      })
+    let listing = null
+    session.subscribe('/listing/848',(e,data) => listing = data)
+
+    session.subscribe('/listing/848/quotes',(e,quotes) => {
+      expect(listing).to.exist
+      expect(quotes).to.exist
+      expect(listing.quotes === quotes).to.be.true
+      done()
     })
+
   })
 
   it('should support two subscribers for same entity resource with missing urls',(done) => {
@@ -264,16 +266,17 @@ describe('cache',() => {
         }
         ]})
 
-      session.subscribe('/listing/848',(e,listing) => {
-        session.subscribe('/listing/848/orderbook',(e,orderbook) => {
-          expect(listing).to.exist
-          expect(listing.orderbook).to.exist
-          expect(listing.orderbook === orderbook).be.true
-          expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
-          expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+      let listing = null
+      session.subscribe('/listing/848',(e,data) => listing = data)
 
-          done()
-        })
+      session.subscribe('/listing/848/orderbook',(e,orderbook) => {
+        expect(listing).to.exist
+        expect(listing.orderbook).to.exist
+        expect(listing.orderbook === orderbook).be.true
+        expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+        expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+
+        done()
       })
     })
 
@@ -298,16 +301,17 @@ describe('cache',() => {
         }
         ]})
 
-      session.subscribe('/listing/848',(e,listing) => {
-        session.subscribe('/listing/848/orderbook',(e,orderbook) => {
-          expect(listing).to.exist
-          expect(listing.orderbook).to.exist
-          expect(listing.orderbook === orderbook).be.true
-          expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
-          expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+      let listing = null
+      session.subscribe('/listing/848',(e,data) => listing = data)
 
-          done()
-        })
+      session.subscribe('/listing/848/orderbook',(e,orderbook) => {
+        expect(listing).to.exist
+        expect(listing.orderbook).to.exist
+        expect(listing.orderbook === orderbook).be.true
+        expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+        expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+
+        done()
       })
     })
 
@@ -346,16 +350,16 @@ describe('cache',() => {
         }
         ]})
 
-      session.subscribe('/listing/848',(e,listing) => {
-        session.subscribe('/listing/848/orderbook',(e,orderbook) => {
-          expect(listing).to.exist
-          expect(listing.orderbook).to.exist
-          expect(listing.orderbook === orderbook).be.true
-          expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
-          expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+      let listing = null
+      session.subscribe('/listing/848',(e,data) => listing = data)
 
-          done()
-        })
+      session.subscribe('/listing/848/orderbook',(e,orderbook) => {
+        expect(listing).to.exist
+        expect(listing.orderbook).to.exist
+        expect(listing.orderbook === orderbook).be.true
+        expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+        expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+        done()
       })
     })
 
@@ -386,16 +390,17 @@ describe('cache',() => {
         }
       })
 
-      session.subscribe('/listing/848/orderbook',(e,orderbook) => {
-        session.subscribe('/listing/848',(e,listing) => {
-          expect(listing).to.exist
-          expect(listing.orderbook).to.exist
-          expect(listing.orderbook === orderbook).be.true
-          expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
-          expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+      let orderbook = null
+      session.subscribe('/listing/848/orderbook',(e,data) => orderbook = data)
 
-          done()
-        })
+      session.subscribe('/listing/848',(e,listing) => {
+        expect(listing).to.exist
+        expect(listing.orderbook).to.exist
+        expect(listing.orderbook === orderbook).be.true
+        expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+        expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+
+        done()
       })
     })
 
@@ -434,25 +439,26 @@ describe('cache',() => {
             bidPrice: 200
           }})
 
+
+      let listing = null
+      session.subscribe('/listings/848',(e,data) => { listing = data })
+
       let calls = 0
+      session.subscribe('/listings/848/orderbook',(e,orderbook) => {
+        calls++
 
-      session.subscribe('/listings/848',(e,listing) => {
-        session.subscribe('/listings/848/orderbook',(e,orderbook) => {
-          calls++
+        expect(listing).to.exist
+        expect(listing.orderbook).to.exist
+        expect(listing.orderbook === orderbook).be.true
+        expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+        expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
 
-          expect(listing).to.exist
-          expect(listing.orderbook).to.exist
-          expect(listing.orderbook === orderbook).be.true
-          expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
-          expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+        if (calls == 1) {
+          session.refresh('/listings/848')
+          return
+        }
 
-          if (calls == 1) {
-            session.refresh('/listings/848')
-            return
-          }
-
-          done()
-        })
+        done()
       })
     })
 
