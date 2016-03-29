@@ -1,6 +1,6 @@
 # About
-SDK for api.six.se
-Contact info
+Javascript SDK for api.six.se
+<!-- TODO: add Contact info -->
 
 ## Usage
 
@@ -65,7 +65,7 @@ When using the SDK from *cdn.six.se* the SDK is installed as ```Six``` in the gl
 ```
 
 ## API
-Before using the any of the methods in the SDK you must retrieve an authentication token from api.six.se (see the documentation for the API as to how). This is usually done in some backend system and provided as an global var in the HTML page returned to the user.
+Before using the any of the methods in the SDK you must retrieve an authentication token from api.six.se (see the documentation for the API). This is usually done in some backend system and provided as an global var in the HTML document returned to the browser.
 
 ## Session
 
@@ -99,9 +99,9 @@ var session = Six.connect(TOKEN).withContext({userId: '16ef65e39e6114fa6d9510042
 
 The primary way to retrive data from api is via ```subscribe(resource,callbackFn)```
 
-The ```subscribe``` method takes a resource (relative to the API endpoint, ie '/markets/SEE' not 'https://api.six.se/v2/markets/SSE') and a callback function.
+The ```subscribe``` method takes a resource (relative to the API endpoint, ie ```/markets/SEE``` not ```https://api.six.se/v2/markets/SSE```) and a callback function.
 
-The callback function will be called anytime there is new data available for the resource from the SDK (some other component have called ```refresh``` etc). The callback *can* be called **more than once**.
+The callback function will be called anytime there is new data available for the resource from the SDK (some other component have called ```refresh``` etc). The callback *may* be called **more than once**.
 
 The callback can also first be called with an error object, and later with data.
 
