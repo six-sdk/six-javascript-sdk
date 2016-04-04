@@ -79,7 +79,7 @@ All methods to retrive data from the API is attached to the Session object.
 - clearCache()
 
 
-### Create an session
+### Create a session
 
 To create a new session object:
 
@@ -94,6 +94,8 @@ To create a session with additional context:
 ```javascript
 var session = Six.connect(TOKEN).withContext({userId: '16ef65e39e6114fa6d9510042ad83472c9db756a'})
 ```
+
+For more information about session contexts, see the API documentation.
 
 ### Getting data from the API
 
@@ -135,15 +137,15 @@ Errors returned from the SDK methods is of the same structure as error responses
 
 ### Caching
 
-The SDK caches all resources fetched from the API, and all subscribers for the same resource will receive the same data when new data arrives.
-This means that multiple components on a page using the same underlying data will be kept in sync.
+The SDK caches all resources fetched from the API, and all subscribers for the same resource will receive the same data when new data arrives.This means that multiple components on a page using the same underlying data will be kept in sync.
+
+Data is cached until the session is destroyed (typically the next pageview) or ```session.clearCache()``` is called. 
 
 <!-- TODO: something about entities and matching in populations -->
 
 ### Refreshing data
 
-To populate the cache with new data, there is a method ```session.refresh(resource)```. The API will be called and all subscribers for the resource
-will have their callbacks called.
+To populate the cache with new data, there is a method ```session.refresh(resource)```. The API will be called and all subscribers for the resource will have their callbacks called.
 
 ```javascript
 session.refresh('/listings/848')
