@@ -158,7 +158,7 @@ export default function (token, endpoint) {
       _context: {sdk: VersionInfo.version },
 
       publish: function(resource,data,err) {
-        // on errors, *only* notify all subscriptions for original resource
+        // on errors, notify all subscriptions *only* for original resource
         if (err) {
           let subscriptions = resourceToSubscription[resource]
           if (subscriptions) {
@@ -297,7 +297,10 @@ export default function (token, endpoint) {
       }
 
       // if not found in cache, we call refresh to fetch from the API
-      this.refresh(resource)
+      // (only for API resources, i.e starting with a /)
+      if (resource[0] == '/') {
+        this.refresh(resource)
+      }
 
       // return the unsubscribe function
       return sub.unsubscribeFn
