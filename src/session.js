@@ -7,7 +7,7 @@ const deepMerge = function deepMerge (target, source) {
 
   for (var prop in source) {
       if (source.hasOwnProperty(prop)) {
-          if (Arrays.isArray(source[prop])) {
+          if (Array.isArray(source[prop])) {
               target[prop] = source[prop]
           } else if (target[prop] && typeof source[prop] === 'object') {
               deepMerge(target[prop], source[prop])
