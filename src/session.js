@@ -196,7 +196,7 @@ export default function (token, endpoint) {
         // etc
         //
         // We find the root by looking for an _parent reference
-        const rootEntity = data._parent || data.url
+        const rootEntity = data && (data._parent || data.url)
 
         if (rootEntity) {
           const root = entityCache[rootEntity]
