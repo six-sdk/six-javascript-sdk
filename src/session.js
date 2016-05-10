@@ -316,7 +316,12 @@ export default function (token, endpoint) {
     create: function refresh (resource,content) {
       this.debug && console.log('refresh', resource, content)
       let promise = fetch(token, resource, endpoint, this._internal._context, {method: 'POST', body: content})
-      promise.then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
+      promise.then((response) => setTimeout(() => {
+        if (response && response.url) {
+          this._internal.publish(response.url,response,null)
+        }
+      }
+      , 0))
       return promise
     },
 
