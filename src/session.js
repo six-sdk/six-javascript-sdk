@@ -7,16 +7,16 @@ const deepMerge = function deepMerge (target, source) {
 
   for (var prop in source) {
       if (source.hasOwnProperty(prop)) {
-          if (target[prop] && typeof source[prop] === 'object') {
-              deepMerge(target[prop], source[prop]);
-          }
-          // TODO: handle arrays?
-          else {
-              target[prop] = source[prop];
+          if (Arrays.isArray(source[prop])) {
+              target[prop] = source[prop]
+          } else if (target[prop] && typeof source[prop] === 'object') {
+              deepMerge(target[prop], source[prop])
+          } else {
+              target[prop] = source[prop]
           }
       }
   }
-  return target;
+  return target
 }
 
 const mergeIntoArray = function mergeIntoArray (arr,item) {
