@@ -15,11 +15,26 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
 
     req.onerror = (event) => {
       reject({
-        code: "AJAX_ERROR",
-        title: "Request to endpoint failed",
-        description: "The request failed. Check that the endpoint is valid?",
+        code: 'AJAX_ERROR',
+        title: 'Request to endpoint failed',
+        description: 'The request failed. Check that the endpoint is valid?',
         details: {
-          endpoint: endpoint
+          endpoint,
+          url,
+          status: req.status
+        }
+      })
+    }
+
+    req.ontimeout = (event) => {
+      reject({
+        code: 'AJAX_ERROR',
+        title: 'Request to endpoint timed out',
+        description: 'The request timed out. Check that the endpoint is valid?',
+        details: {
+          endpoint,
+          url,
+          status: req.status
         }
       })
     }
@@ -32,7 +47,7 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
       if (req.status >= 200 && req.status < 400) {
         // The 204 response MUST NOT include a message-body ...
         if (req.status === 204) {
-            resolve(null)
+          resolve(null)
         }
 
         try {
@@ -43,12 +58,14 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
           }
         } catch (e) {
           reject({
-            code: "INVALID_RESPONSE",
+            code: 'INVALID_RESPONSE',
             title: "Response isn't valid JSON",
             description: "The response couldn't be parsed into an Javascript object. Check that the endpoint is valid?",
             details: {
-              endpoint: endpoint,
-              responseText: req.responseText
+              endpoint,
+              url,
+              responseText: req.responseText,
+              status: req.status
             }
           })
         }
@@ -61,12 +78,14 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
           }
         } catch (e) {
           reject({
-            code: "INVALID_RESPONSE",
+            code: 'INVALID_RESPONSE',
             title: "Response isn't valid JSON",
             description: "The response couldn't be parsed into an Javascript object. Check that the endpoint is valid?",
             details: {
-              endpoint: endpoint,
-              responseText: req.responseText
+              endpoint,
+              url,
+              responseText: req.responseText,
+              status: req.status
             }
           })
         }
@@ -91,4 +110,10 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
       req.send()
     }
   })
+}
+
+export const createFetch = function createFetch (token, url, endpoint, context, {method, body} = {method: 'GET', body: null}) {
+  return function savedFetch () {
+    return fetch(token, url, endpoint, context, {method, body})
+  }
 }

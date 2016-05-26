@@ -1,41 +1,71 @@
-import {fetch} from './fetch'
+import {createFetch} from './fetch'
 import VersionInfo from './meta-version'
+
+const MAX_RETRIES = 100
+const MAX_RETRY_TIMEOUT = 900000// 15 minutes
+const RETRY_START_TIMEOUT = 5000
+const RETRY_TIMEOUT_INCREMENT = 25000
+
+const retry = function retry (fetchFunc, failFunc) {
+  let retryTimeout = global.RETRY_START_TIMEOUT || RETRY_START_TIMEOUT
+  let retries = 0
+  return new Promise(function (resolve, reject) {
+    function doRetry (err) {
+      const status = err.details.status
+      // status 0 should be transport errors and 5xx server errors
+      if ((status === 0 || (status >= 500 && status < 600)) && retries < (global.MAX_RETRIES || MAX_RETRIES)) {
+        failFunc(err)
+        setTimeout(() => {
+          retries++
+          if (retryTimeout < (global.MAX_RETRY_TIMEOUT || MAX_RETRY_TIMEOUT)) {
+            retryTimeout = retryTimeout + (global.RETRY_TIMEOUT_INCREMENT || RETRY_TIMEOUT_INCREMENT)
+          }
+          fetchFunc().then(resolve).catch(doRetry)
+        }, retryTimeout)
+      } else {
+        reject(err)
+      }
+    }
+    fetchFunc().then(resolve).catch(doRetry)
+  })
+}
 
 const deepMerge = function deepMerge (target, source) {
   if (!target) return source
   if (!source) return target
 
   for (var prop in source) {
-      if (source.hasOwnProperty(prop)) {
-          if (Array.isArray(source[prop])) {
-              target[prop] = source[prop]
-          } else if (target[prop] && typeof source[prop] === 'object') {
-              deepMerge(target[prop], source[prop])
-          } else {
-              target[prop] = source[prop]
-          }
+    if (source.hasOwnProperty(prop)) {
+      if (Array.isArray(source[prop])) {
+        target[prop] = source[prop]
+      } else if (target[prop] && typeof source[prop] === 'object') {
+        deepMerge(target[prop], source[prop])
+      } else {
+        target[prop] = source[prop]
       }
+    }
   }
   return target
 }
 
-const mergeIntoArray = function mergeIntoArray (arr,item) {
+const mergeIntoArray = function mergeIntoArray (arr, item) {
   if (!arr) return [item]
   let i = arr.indexOf(item)
-  if (i == -1) arr.push(item)
+  if (i === -1) arr.push(item)
   return arr
 }
 
-const nextId = function() {
+const nextId = (function generateNextId () {
   let id = 0
-  return function() {
+  return function incrementId () {
     id += 1
     return id
   }
-}()
+}())
 
 export default function (token, endpoint) {
-  //TODO: can we use Map?
+  let currentToken = token
+  // TODO: can we use Map?
   const subscriptions = {}
   const resourceToSubscription = {}
 
@@ -50,12 +80,12 @@ export default function (token, endpoint) {
       delete subscriptions[id]
 
       // remove resource -> subscription mapping
-      resourceToSubscription[subscription.resource] = resourceToSubscription[subscription.resource].filter(s => !(s.id == id))
+      resourceToSubscription[subscription.resource] = resourceToSubscription[subscription.resource].filter(s => !(s.id === id))
     }
   }
 
   // merges new data into the cache
-  const merge = function(resource,data) {
+  const merge = function merge (resource, data) {
     let cached = data
 
     // handle paginated data
@@ -63,18 +93,18 @@ export default function (token, endpoint) {
       // merge items into entityCache
       data.items = data.items.map(item => {
         if (item.url) {
-          item = deepMerge(entityCache[item.url],item)
+          item = deepMerge(entityCache[item.url], item)
           entityCache[item.url] = item
-          entityToResource[item.url] = mergeIntoArray(entityToResource[item.url],resource)
+          entityToResource[item.url] = mergeIntoArray(entityToResource[item.url], resource)
         }
         return item
       })
     } else {
       // merge into entityCache
       if (data && data.url) {
-        cached = deepMerge(entityCache[data.url],data)
+        cached = deepMerge(entityCache[data.url], data)
         entityCache[data.url] = cached
-        entityToResource[data.url] = mergeIntoArray(entityToResource[data.url],resource)
+        entityToResource[data.url] = mergeIntoArray(entityToResource[data.url], resource)
       }
 
       // TODO: below must be done also for items in paginated responses
@@ -87,7 +117,7 @@ export default function (token, endpoint) {
     }
 
     // merge into resourceCache
-    cached = deepMerge(resourceCache[resource],cached)
+    cached = deepMerge(resourceCache[resource], cached)
     resourceCache[resource] = cached
 
     return cached
@@ -95,7 +125,7 @@ export default function (token, endpoint) {
 
   // merges a cached domain object with the rest of the domain
   // i.e resolves all relations
-  const mergeRelations = function mergeRelations(obj) {
+  const mergeRelations = function mergeRelations (obj) {
     if (!obj) return obj
 
     // dereference all subresources
@@ -106,7 +136,7 @@ export default function (token, endpoint) {
           if (!cached) {
             entityCache[obj[field].url] = obj[field]
           }
-          obj[field] =  cached || obj[field]
+          obj[field] = cached || obj[field]
 
           // connect subresources back to parent
           if (obj.url) {
@@ -120,15 +150,15 @@ export default function (token, endpoint) {
   }
 
   // domain-specific merge function, handles Bid/Ask syncing etc
-  const mergeDomain = function mergeDomain(obj) {
+  const mergeDomain = function mergeDomain (obj) {
     if (!obj) return obj
 
     // Orderbooks Level 1 Bid/Ask should match Quotes Bid/Ask
-    let listingWithOrderbook = obj.orderbook ? obj: null
+    let listingWithOrderbook = obj.orderbook ? obj : null
 
     // special handling for "naked" orderbooks
-    if (obj.url && obj.url.endsWith("/orderbook")) {
-      let entityUrl = obj.url.substring(0,obj.url.length - "/orderbook".length)
+    if (obj.url && obj.url.endsWith('/orderbook')) {
+      let entityUrl = obj.url.substring(0, obj.url.length - '/orderbook'.length)
       listingWithOrderbook = entityCache[entityUrl]
 
       if (listingWithOrderbook && (!listingWithOrderbook.orderbook)) {
@@ -148,6 +178,9 @@ export default function (token, endpoint) {
     return obj
   }
 
+  let onError
+  let onSessionExpired
+
   return {
     _internal: {
       _subscriptions: subscriptions,
@@ -155,20 +188,35 @@ export default function (token, endpoint) {
       _entityCache: entityCache,
       _resourceCache: resourceCache,
       _entityToResource: entityToResource,
-      _context: {sdk: VersionInfo.version },
+      _context: { sdk: VersionInfo.version },
 
-      publish: function(resource,data,err) {
+      getToken: function getToken () {
+        return currentToken
+      },
+
+      publishError: function publishError (resource, data, err) {
+        // Access denied
+        if (onSessionExpired && err.details.status === 401) {
+          currentToken = onSessionExpired() || currentToken
+        }
+        if (onError) {
+          setTimeout(() => { onError(err) })
+        }
+        let subscriptions = resourceToSubscription[resource]
+        if (subscriptions) {
+          subscriptions.forEach(s => s.callback(err, data, s.unsubscribeFn))
+        }
+      },
+
+      publish: function publish (resource, data, err) {
         // on errors, notify all subscriptions *only* for original resource
         if (err) {
-          let subscriptions = resourceToSubscription[resource]
-          if (subscriptions) {
-            subscriptions.forEach(s => s.callback(err,data,s.unsubscribeFn))
-          }
+          this.publishError(resource, data, err)
           return
         }
 
-        //merge data into cache
-        data = merge(resource,data)
+        // merge data into cache
+        data = merge(resource, data)
 
         // Optimize so we don't call callbacks more than once/publish.
         // Not strictly necessary, but helps in tests and debugging
@@ -182,7 +230,7 @@ export default function (token, endpoint) {
         if (subscriptions) {
           subscriptions.forEach(subscription => {
             if (!called[subscription.id]) {
-              subscription.callback(err,data,subscription.unsubscribeFn)
+              subscription.callback(err, data, subscription.unsubscribeFn)
               called[subscription.id] = true
             }
           })
@@ -210,7 +258,7 @@ export default function (token, endpoint) {
                 if (subscriptions) {
                   subscriptions.forEach(s => {
                     if (!called[s.id]) {
-                      s.callback(err,response,s.unsubscribeFn)
+                      s.callback(err, response, s.unsubscribeFn)
                       called[s.id] = true
                     }
                   })
@@ -230,7 +278,7 @@ export default function (token, endpoint) {
                     if (subscriptions) {
                       subscriptions.forEach(subscription => {
                         if (!called[subscription.id]) {
-                          subscription.callback(err,resourceCache[resource],subscription.unsubscribeFn)
+                          subscription.callback(err, resourceCache[resource], subscription.unsubscribeFn)
                           called[subscription.id] = true
                         }
                       })
@@ -239,7 +287,6 @@ export default function (token, endpoint) {
                 }
               }
             })
-
           }
         }
 
@@ -257,7 +304,7 @@ export default function (token, endpoint) {
                 if (subscriptions) {
                   subscriptions.forEach(s => {
                     if (!called[s.id]) {
-                      s.callback(err,response,s.unsubscribeFn)
+                      s.callback(err, response, s.unsubscribeFn)
                       called[s.id] = true
                     }
                   })
@@ -268,14 +315,17 @@ export default function (token, endpoint) {
         }
       },
 
-      fetch: function(resource,callback) {
+      fetch: function fetch (resource, callback) {
         this.debug && console.log('fetch', resource)
-        return fetch(token, resource, endpoint, this._context)
-      },
+        const errFunc = (err) => { this._internal.publishError(resource, null, err) }
+        const promise = retry(createFetch(currentToken, resource, endpoint, this._context), errFunc)
+        promise.catch(errFunc)
+        return promise
+      }
     },
 
     subscribe: function subscribe (resource, callback) {
-      this.debug && console.log('subscribe', token, resource, endpoint)
+      this.debug && console.log('subscribe', currentToken, resource, endpoint)
       const sub = {id: nextId(), resource, callback}
 
       // create an Fn to unsubscribe
@@ -287,18 +337,18 @@ export default function (token, endpoint) {
       // resource -> subscription (exact mapping)
       resourceToSubscription[resource] = resourceToSubscription[resource] || []
       resourceToSubscription[resource].push(sub)
-      //console.log('resourceToSubscription',resourceToSubscription)
+      // console.log('resourceToSubscription',resourceToSubscription)
 
       // check cache for this resource
       if (resourceCache[resource]) {
-        //console.log("resource found in cache, notify direct")
-        callback(null,resourceCache[resource],sub.unsubscribeFn)
+        // console.log("resource found in cache, notify direct")
+        callback(null, resourceCache[resource], sub.unsubscribeFn)
         return sub.unsubscribeFn
       }
 
       // if not found in cache, we call refresh to fetch from the API
       // (only for API resources, i.e starting with a /)
-      if (resource[0] == '/') {
+      if (resource[0] === '/') {
         this.refresh(resource)
       }
 
@@ -308,46 +358,54 @@ export default function (token, endpoint) {
 
     refresh: function refresh (resource) {
       this.debug && console.log('refresh', resource)
-      fetch(token, resource, endpoint, this._internal._context)
-      .then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
-      .catch((err) => setTimeout(() => this._internal.publish(resource,null,err), 0))
+      const errFunc = (err) => { this._internal.publishError(resource, null, err) }
+      retry(createFetch(currentToken, resource, endpoint, this._internal._context), errFunc)
+      .then((response) => setTimeout(() => this._internal.publish(resource, response, null), 0))
+      .catch(errFunc)
     },
 
-    create: function refresh (resource,content) {
+    create: function create (resource, content) {
       this.debug && console.log('refresh', resource, content)
-      let promise = fetch(token, resource, endpoint, this._internal._context, {method: 'POST', body: content})
+      const errFunc = (err) => { this._internal.publishError(resource, null, err) }
+      let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'POST', body: content}), errFunc)
       promise.then((response) => setTimeout(() => {
         if (response && response.url) {
-          this._internal.publish(response.url,response,null)
+          this._internal.publish(response.url, response, null)
         }
       }
       , 0))
+      promise.catch(errFunc)
       return promise
     },
 
-    update: function refresh (resource,content) {
+    update: function update (resource, content) {
       this.debug && console.log('update', resource, content)
-      let promise = fetch(token, resource, endpoint, this._internal._context, {method: 'PUT', body: content})
-      promise.then((response) => setTimeout(() => this._internal.publish(resource,response,null), 0))
+      const errFunc = (err) => { this._internal.publishError(resource, null, err) }
+      let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'PUT', body: content}), errFunc)
+      promise.then((response) => setTimeout(() => this._internal.publish(resource, response, null), 0))
+      promise.catch(errFunc)
       return promise
     },
 
-    remove: function refresh (resource) {
+    remove: function remove (resource) {
       this.debug && console.log('remove', resource)
-      let promise = fetch(token, resource, endpoint, this._internal._context, {method: 'DELETE', body: null})
+      const errFunc = (err) => { this._internal.publishError(resource, null, err) }
+      let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'DELETE', body: null}), errFunc)
 
       promise.then((response) => setTimeout(() => {
         delete resourceCache[resource]
-        this._internal.publish(resource,null,null)
+        this._internal.publish(resource, null, null)
       }, 0))
+      promise.catch(errFunc)
 
       return promise
     },
 
     clearCache: function clearCache () {
-      for (var prop in entityCache)       { if (entityCache.hasOwnProperty(prop))       { delete entityCache[prop] } }
-      for (var prop in resourceCache)     { if (resourceCache.hasOwnProperty(prop))     { delete resourceCache[prop] } }
-      for (var prop in entityToResource)  { if (entityToResource.hasOwnProperty(prop))  { delete entityToResource[prop] } }
+      /* eslint no-multi-spaces: 0 */
+      for (let prop in entityCache)       { if (entityCache.hasOwnProperty(prop))       { delete entityCache[prop] } }
+      for (let prop in resourceCache)     { if (resourceCache.hasOwnProperty(prop))     { delete resourceCache[prop] } }
+      for (let prop in entityToResource)  { if (entityToResource.hasOwnProperty(prop))  { delete entityToResource[prop] } }
     },
 
     withContext: function withContext (context) {
@@ -355,6 +413,18 @@ export default function (token, endpoint) {
       newSession._internal = Object.create(this._internal)
       newSession._internal._context = Object.assign({}, this._internal._context, context)
       return newSession
+    },
+
+    onError: function setErrorListener (callback) {
+      onError = callback
+    },
+
+    onSessionExpired: function setSessionExpiredListener (callback) {
+      onSessionExpired = callback
+    },
+
+    setToken: function setToken (newToken) {
+      currentToken = newToken
     }
   }
 }
