@@ -3,3 +3,5 @@ node_modules
 dist
 lib
 src/meta-version.js
+.idea
+*.iml

@@ -77,6 +77,7 @@ All methods to retrive data from the API is attached to the Session object.
 - update(resource,data) -> Promise
 - remove(resource) -> Promise
 - clearCache()
+- setToken()
 
 
 ### Create a session
@@ -133,6 +134,38 @@ Errors returned from the SDK methods is of the same structure as error responses
     endpoint: 'https://api.six.se/v2/'
   }
 }
+```
+
+#### error
+All errors are sent to a 'error' subscription.
+
+```javascript
+// register an error handler with the session
+session.subscribe('error', function logErrors (error) {
+  // this callback can be called more then once
+})
+```
+
+#### session-expired and setToken
+To listen to when the session has expired the 'session-expired' resource can be subscribed to.
+The resource will be called when the api responds with a access denied.
+It is then possible to set a new token with the setToken method
+
+**Subscribe to session-expired and set a new token**
+```javascript
+session.subscribe('session-expired', function refreshToken(error, data) {
+  // This callback will be called for every request that receives session expired
+  session.setToken(getNewTokenFromMyBackend())
+})
+```
+
+**Refresh token every hour**
+```javascript
+// You can set a new token any time
+var ONE_HOUR = 1000 * 60 * 60
+setInterval(function updateToken() {
+  session.setToken(fetchNewToken())
+}, ONE_HOUR)
 ```
 
 ### Caching

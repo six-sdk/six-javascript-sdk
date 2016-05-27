@@ -13,6 +13,7 @@ describe('subscribe(resource,[callback])',() => {
   const TOKEN = 'fake-token'
   const response = {id: '848', url: '/listing/848'}
   let session = null
+  let clock
 
   // restore xhr
   const xhr = global.XMLHttpRequest
@@ -62,6 +63,22 @@ describe('subscribe(resource,[callback])',() => {
     XMLHttpRequest.respondWithError({})
   })
 
+  it('should propagate errors to session error handlers',(done) => {
+    const errorSpy = sinon.spy((error) => {
+      expect(error).to.exist
+      expect(error.code).to.equal('AJAX_ERROR')
+      done()
+    })
+    session.subscribe('error', errorSpy)
+    session.subscribe('/listings/848',(err,data) => {
+      expect(data).to.not.exist
+      expect(err).to.exist
+      expect(err.code).to.equal('AJAX_ERROR')
+    })
+
+    XMLHttpRequest.respondWithError({})
+  })
+
   it('refresh', (done) => {
     let calls = 0
     session.subscribe('/listings/848',(err,data) => {
@@ -92,4 +109,105 @@ describe('subscribe(resource,[callback])',() => {
     session.refresh('/listings/848')
   })
 
+  describe('retries', () => {
+    it('should retry on failure',(done) => {
+      global.MAX_RETRIES = 1
+      global.RETRY_START_TIMEOUT = 1
+      global.RETRY_TIMEOUT_INCREMENT = 1
+      const errorSpy = sinon.spy((error) => {
+        expect(error).to.exist
+        expect(error.code).to.equal('AJAX_ERROR')
+      })
+      session.subscribe('error', errorSpy)
+      const callback = sinon.spy()
+      session.subscribe('/listings/848', callback)
+
+      XMLHttpRequest.respondWithError({})
+      XMLHttpRequest.respondWith(response)
+
+      setTimeout(() => {
+        // request successful
+        expect(callback.called).to.be.true
+        expect(errorSpy.calledOnce).to.be.true
+        expect(callback.calledTwice).to.be.true
+        done()
+      }, 15)
+    })
+
+    it('should not retry on user error',(done) => {
+      global.MAX_RETRIES = 1
+      global.RETRY_START_TIMEOUT = 1
+      global.RETRY_TIMEOUT_INCREMENT = 1
+      const errorSpy = sinon.spy((error) => {
+        expect(error).to.exist
+        expect(error.code).to.equal('AJAX_ERROR')
+      })
+      session.subscribe('error', errorSpy)
+      const callback = sinon.spy()
+      session.subscribe('/listings/848', callback)
+
+      // bad request
+      XMLHttpRequest.respondWithError({}, 400)
+
+      // this request should not be executed
+      XMLHttpRequest.respondWith(response)
+
+      setTimeout(() => {
+        // request failed
+        expect(callback.calledOnce).to.be.true
+      }, 2)
+      setTimeout(() => {
+        // no new request
+        expect(callback.calledTwice).to.be.false
+        expect(errorSpy.calledOnce).to.be.true
+        done()
+      }, 10)
+    })
+  })
+
+  describe('onSessionExpired', () => {
+    it('should call onSessionExpired on 401 errors',(done) => {
+      session.subscribe('session-expired', (err, data) => {
+        session.setToken('new-token')
+        expect(data).to.not.exist
+        expect(err).to.exist
+        expect(err.code).to.equal('AJAX_ERROR')
+      })
+      session.subscribe('/listings/848',(err,data) => {
+        expect(data).to.not.exist
+        expect(err).to.exist
+        expect(err.code).to.equal('AJAX_ERROR')
+      })
+
+      XMLHttpRequest.respondWithError({}, 401)
+
+      setTimeout(() => {
+        expect(session._internal.getToken()).to.equal('new-token')
+        done()
+      }, 0)
+    })
+
+    it('should set the token in all instances',(done) => {
+      const newContext = session.withContext({})
+      session.subscribe('session-expired', (err, data) => {
+        session.setToken('new-token')
+        expect(data).to.not.exist
+        expect(err).to.exist
+        expect(err.code).to.equal('AJAX_ERROR')
+      })
+      session.subscribe('/listings/848',(err,data) => {
+        expect(data).to.not.exist
+        expect(err).to.exist
+        expect(err.code).to.equal('AJAX_ERROR')
+      })
+
+      XMLHttpRequest.respondWithError({}, 401)
+
+      setTimeout(() => {
+        expect(session._internal.getToken()).to.equal('new-token')
+        expect(newContext._internal.getToken()).to.equal('new-token')
+        done()
+      }, 0)
+    })
+  })
 })

@@ -11,12 +11,12 @@ const git = function (cmd, cb) {
 }
 
 // read package.json
-const package = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'))
+const packageObject = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'))
 
 const versionInfo = {
-  version: package.version,
+  version: packageObject.version,
   git: {
-    //tag: git('describe --always --tag --abbrev=0'),
+    // tag: git('describe --always --tag --abbrev=0'),
     short: git('rev-parse --short HEAD'),
     long: git('rev-parse HEAD'),
     branch: git('rev-parse --abbrev-ref HEAD')
@@ -24,8 +24,8 @@ const versionInfo = {
 }
 
 // convert to JSON
-const json = JSON.stringify(versionInfo,null,2)
+const json = JSON.stringify(versionInfo, null, 2)
 
 // write file
-console.log('writing '+target)
-fs.writeFileSync(target,'export default '+json)
+console.log('writing  ' + target)
+fs.writeFileSync(target, 'export default ' + json)
