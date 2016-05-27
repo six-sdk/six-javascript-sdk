@@ -180,6 +180,7 @@ export default function (token, endpoint) {
 
   return {
     _internal: {
+      _endpoint: endpoint,
       _subscriptions: subscriptions,
       _resourceToSubscription: resourceToSubscription,
       _entityCache: entityCache,

@@ -72,9 +72,9 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
       } else {
         try {
           if (contentType.startsWith('text/plain')) {
-            resolve(req.responseText)
+            reject(req.responseText)
           } else {
-            resolve(JSON.parse(req.responseText))
+            reject(JSON.parse(req.responseText))
           }
         } catch (e) {
           reject({
