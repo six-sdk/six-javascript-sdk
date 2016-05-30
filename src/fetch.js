@@ -72,9 +72,25 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
       } else {
         try {
           if (contentType.startsWith('text/plain')) {
-            reject(req.responseText)
+            reject({
+              code: 'AJAX_ERROR',
+              title: 'Failed to fulfill request',
+              description: "The request couldn't be fulfilled, Check that the endpoint is valid?",
+              details: {
+                endpoint,
+                url,
+                responseText: req.responseText,
+                status: req.status
+              }
+            })
           } else {
-            reject(JSON.parse(req.responseText))
+            const error = JSON.parse(req.responseText)
+            error.details = {
+              endpoint,
+              url,
+              status: req.status
+            }
+            reject(error)
           }
         } catch (e) {
           reject({

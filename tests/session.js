@@ -116,13 +116,13 @@ describe('subscribe(resource,[callback])',() => {
       global.RETRY_TIMEOUT_INCREMENT = 1
       const errorSpy = sinon.spy((error) => {
         expect(error).to.exist
-        expect(error.code).to.equal('AJAX_ERROR')
+        expect(error.code).to.equal('GENERAL_INTERNAL_ERROR')
       })
       session.subscribe('error', errorSpy)
       const callback = sinon.spy()
       session.subscribe('/listings/848', callback)
 
-      XMLHttpRequest.respondWithError({})
+      XMLHttpRequest.respondWith('{  "requestId" : "5d269742-8311-4065-84dd-6493b287fad6",  "httpStatusCode" : 500,  "code" : "GENERAL_INTERNAL_ERROR",  "title" : "General error",  "description" : "A general internal server error occured. "}', 500)
       XMLHttpRequest.respondWith(response)
 
       setTimeout(() => {
