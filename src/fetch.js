@@ -116,6 +116,9 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
     }
 
     if (context) {
+      if (context.locale) {
+        req.setRequestHeader('Accept-Language', context.locale)
+      }
       req.setRequestHeader('Context', window.btoa(JSON.stringify(context)))
     }
 
