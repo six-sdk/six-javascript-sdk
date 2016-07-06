@@ -1,6 +1,6 @@
 {
   "name": "six-sdk",
-  "version": "0.6.0",
+  "version": "0.6.1-1",
   "description": "SIX Javascript SDK",
   "main": "lib",
   "scripts": {
@@ -8,6 +8,7 @@
     "prepare": "node ./bin/create-meta-version.js",
     "compile": "babel src --out-dir lib ",
     "test": "npm run prepare && mocha --compilers js:babel-register --recursive ./tests",
+    "get-stage":"get-stage",
     "push:npm": "npm run prepare && npm run compile && npm publish",
     "push:cdn": "npm run dist && node ./bin/push-cdn",
     "dist": "npm run prepare && npm run dist:dev && npm run dist:min",
@@ -51,6 +52,7 @@
     "mocha-jsdom": "^1.0.0",
     "semver": "^5.1.0",
     "sinon": "^1.17.3",
+    "six-widget-release-support": "0.0.1-0",
     "webpack": "^1.12.9",
     "webpack-dev-server": "^1.14.1"
   },
