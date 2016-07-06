@@ -21,8 +21,12 @@ var push = function(name,version,maxAge) {
 var packageName = process.env.npm_package_name
 var packageVersion = process.env.npm_package_version
 
-console.log('Pushing "'+packageName+'" version '+packageVersion+' to S3')
-
-push(packageName,packageVersion,86400)
-push(packageName,semver.major(packageVersion)+'.'+semver.minor(packageVersion),3600)
-push(packageName,semver.major(packageVersion),3600)
+if(process.env.PUSH_CDN === "true"){
+    console.log('Pushing "'+packageName+'" version '+packageVersion+' to S3')
+    push(packageName,packageVersion,86400)
+    push(packageName,semver.major(packageVersion)+'.'+semver.minor(packageVersion),3600)
+    push(packageName,semver.major(packageVersion),3600)
+}
+else {
+    console.log('PUSH_CDN is not set to "true" will do nothing. To fix: export PUSH_CDN=true')
+}
