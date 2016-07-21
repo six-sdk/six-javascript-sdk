@@ -134,6 +134,38 @@ describe('subscribe(resource,[callback])',() => {
       }, 15)
     })
 
+    it('should abort retry on unsubscribe',(done) => {
+      global.MAX_RETRIES = 10
+      global.RETRY_START_TIMEOUT = 1
+      global.RETRY_TIMEOUT_INCREMENT = 1
+      let errorCalls = 0;
+      const errorSpy = sinon.spy((error) => {
+        errorCalls++
+        expect(error).to.exist
+        if (errorCalls === 1) {
+          expect(error.code).to.equal('GENERAL_INTERNAL_ERROR')
+        } else if (errorCalls === 2) {
+          expect(error.code).to.equal('ABORTED')
+        } else {
+          assert.fail(error, null, 'Too many error calls')
+        }
+      })
+      session.subscribe('error', errorSpy)
+      const callback = sinon.spy()
+      const unsub = session.subscribe('/listings/848', callback)
+      XMLHttpRequest.respondWith('{  "requestId" : "5d269742-8311-4065-84dd-6493b287fad6",  "httpStatusCode" : 500,  "code" : "GENERAL_INTERNAL_ERROR",  "title" : "General error",  "description" : "A general internal server error occured. "}', 500)
+      setTimeout(() => {
+        unsub()
+        XMLHttpRequest.respondWith('{  "requestId" : "5d269742-8311-4065-84dd-6493b287fad6",  "httpStatusCode" : 500,  "code" : "GENERAL_INTERNAL_ERROR",  "title" : "General error",  "description" : "A general internal server error occured. "}', 500)
+      }, 0)
+
+      setTimeout(() => {
+        expect(callback.called).to.be.true
+        expect(errorSpy.calledOnce).to.be.false
+        done()
+      }, 15)
+    })
+
     it('should not retry on user error',(done) => {
       global.MAX_RETRIES = 1
       global.RETRY_START_TIMEOUT = 1

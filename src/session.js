@@ -6,24 +6,32 @@ const MAX_RETRY_TIMEOUT = 900000// 15 minutes
 const RETRY_START_TIMEOUT = 5000
 const RETRY_TIMEOUT_INCREMENT = 25000
 
-const retry = function retry (fetchFunc, failFunc) {
+const retry = function retry (fetchFunc, failFunc, abortFunc) {
   let retryTimeout = global.RETRY_START_TIMEOUT || RETRY_START_TIMEOUT
   let retries = 0
   return new Promise(function (resolve, reject) {
     function doRetry (err) {
-      const status = err.details.status
-      // status 0 should be transport errors and 5xx server errors
-      if ((status === 0 || (status >= 500 && status < 600)) && retries < (global.MAX_RETRIES || MAX_RETRIES)) {
-        failFunc(err)
-        setTimeout(() => {
-          retries++
-          if (retryTimeout < (global.MAX_RETRY_TIMEOUT || MAX_RETRY_TIMEOUT)) {
-            retryTimeout = retryTimeout + (global.RETRY_TIMEOUT_INCREMENT || RETRY_TIMEOUT_INCREMENT)
-          }
-          fetchFunc().then(resolve).catch(doRetry)
-        }, retryTimeout)
+      if (abortFunc && abortFunc()) {
+        reject(Object.assign({}, err, {
+          code: 'ABORTED',
+          title: 'Request was aborted',
+          description: 'The request was aborted'
+        }))
       } else {
-        reject(err)
+        const status = err.details.status
+        // status 0 should be transport errors and 5xx server errors
+        if ((status === 0 || (status >= 500 && status < 600)) && retries < (global.MAX_RETRIES || MAX_RETRIES)) {
+          failFunc(err)
+          setTimeout(() => {
+            retries++
+            if (retryTimeout < (global.MAX_RETRY_TIMEOUT || MAX_RETRY_TIMEOUT)) {
+              retryTimeout = retryTimeout + (global.RETRY_TIMEOUT_INCREMENT || RETRY_TIMEOUT_INCREMENT)
+            }
+            fetchFunc().then(resolve).catch(doRetry)
+          }, retryTimeout)
+        } else {
+          reject(err)
+        }
       }
     }
     fetchFunc().then(resolve).catch(doRetry)
@@ -332,10 +340,15 @@ export default function (token, endpoint) {
       fetch: function fetch (resource, callback) {
         this.debug && console.log('fetch', resource)
         const errFunc = (err) => { this._internal.publishError(resource, null, err) }
-        const promise = retry(createFetch(currentToken, resource, endpoint, this._context), errFunc)
+        const promise = retry(createFetch(currentToken, resource, endpoint, this._context), errFunc, () => { return !this.hasSubscriptions(resource) })
         promise.catch(errFunc)
         return promise
       }
+    },
+
+    hasSubscriptions: function hasSubscriptions (resource) {
+      const subscriptions = resourceToSubscription[resource]
+      return subscriptions && subscriptions.length > 0
     },
 
     subscribe: function subscribe (resource, callback) {
@@ -373,7 +386,7 @@ export default function (token, endpoint) {
     refresh: function refresh (resource) {
       this.debug && console.log('refresh', resource)
       const errFunc = (err) => { this._internal.publishError(resource, null, err) }
-      retry(createFetch(currentToken, resource, endpoint, this._internal._context), errFunc)
+      retry(createFetch(currentToken, resource, endpoint, this._internal._context), errFunc, () => { return !this.hasSubscriptions(resource) })
       .then((response) => setTimeout(() => this._internal.publish(resource, response, null), 0))
       .catch(errFunc)
     },
@@ -381,7 +394,7 @@ export default function (token, endpoint) {
     create: function create (resource, content) {
       this.debug && console.log('refresh', resource, content)
       const errFunc = (err) => { this._internal.publishError(resource, null, err) }
-      let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'POST', body: content}), errFunc)
+      let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'POST', body: content}), errFunc, () => { return !this.hasSubscriptions(resource) })
       promise.then((response) => setTimeout(() => {
         if (response && response.url) {
           this._internal.publish(response.url, response, null)
@@ -395,7 +408,7 @@ export default function (token, endpoint) {
     update: function update (resource, content) {
       this.debug && console.log('update', resource, content)
       const errFunc = (err) => { this._internal.publishError(resource, null, err) }
-      let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'PUT', body: content}), errFunc)
+      let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'PUT', body: content}), errFunc, () => { return !this.hasSubscriptions(resource) })
       promise.then((response) => setTimeout(() => this._internal.publish(resource, response, null), 0))
       promise.catch(errFunc)
       return promise
@@ -404,7 +417,7 @@ export default function (token, endpoint) {
     remove: function remove (resource) {
       this.debug && console.log('remove', resource)
       const errFunc = (err) => { this._internal.publishError(resource, null, err) }
-      let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'DELETE', body: null}), errFunc)
+      let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'DELETE', body: null}), errFunc, () => { return !this.hasSubscriptions(resource) })
 
       promise.then((response) => setTimeout(() => {
         delete resourceCache[resource]
