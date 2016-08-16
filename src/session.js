@@ -154,6 +154,19 @@ export default function (token, endpoint) {
       }
     }
 
+    // example /listings/848/quotes -> /listing/848
+    const parentUrl = obj && (obj._parent || obj.url)
+
+    if (parentUrl) {
+      const root = entityCache[parentUrl]
+      if (root && root.url) {
+        Object.keys(root).forEach((key) => {
+          if (root[key].url === obj.url) {
+            root[key] = obj
+          }
+        })
+      }
+    }
     return obj
   }
 
