@@ -7,7 +7,7 @@ const RETRY_START_TIMEOUT = 5000
 const RETRY_TIMEOUT_INCREMENT = 25000
 
 const retry = function retry (fetchFunc, failFunc, abortFunc) {
-  let retryTimeout = global.RETRY_START_TIMEOUT || RETRY_START_TIMEOUT
+  let retryTimeout = window.RETRY_START_TIMEOUT || RETRY_START_TIMEOUT
   let retries = 0
   return new Promise(function (resolve, reject) {
     function doRetry (err) {
@@ -20,12 +20,12 @@ const retry = function retry (fetchFunc, failFunc, abortFunc) {
       } else {
         const status = err.details.status
         // status 0 should be transport errors and 5xx server errors
-        if ((status === 0 || (status >= 500 && status < 600)) && retries < (global.MAX_RETRIES || MAX_RETRIES)) {
+        if ((status === 0 || (status >= 500 && status < 600)) && retries < (window.MAX_RETRIES || MAX_RETRIES)) {
           failFunc(err)
           setTimeout(() => {
             retries++
-            if (retryTimeout < (global.MAX_RETRY_TIMEOUT || MAX_RETRY_TIMEOUT)) {
-              retryTimeout = retryTimeout + (global.RETRY_TIMEOUT_INCREMENT || RETRY_TIMEOUT_INCREMENT)
+            if (retryTimeout < (window.MAX_RETRY_TIMEOUT || MAX_RETRY_TIMEOUT)) {
+              retryTimeout = retryTimeout + (window.RETRY_TIMEOUT_INCREMENT || RETRY_TIMEOUT_INCREMENT)
             }
             fetchFunc().then(resolve).catch(doRetry)
           }, retryTimeout)
@@ -102,6 +102,11 @@ export default function (token, endpoint) {
       data.items = data.items.map(item => {
         if (item.url) {
           item = deepMerge(entityCache[item.url], item)
+          // resolve connections with related domain objects
+          item = mergeRelations(item)
+
+          // domain specific merge (bid/ask)
+          item = mergeDomain(item)
           entityCache[item.url] = item
           entityToResource[item.url] = mergeIntoArray(entityToResource[item.url], resource)
         }
@@ -143,6 +148,8 @@ export default function (token, endpoint) {
           let cached = entityCache[obj[field].url]
           if (!cached) {
             entityCache[obj[field].url] = obj[field]
+          } else {
+            entityCache[obj[field].url] = deepMerge(entityCache[obj[field].url], obj[field])
           }
           obj[field] = cached || obj[field]
 
@@ -243,6 +250,50 @@ export default function (token, endpoint) {
         }
       },
 
+      notifySubscribers: function notifySubscribers (url, called, err) {
+        const root = entityCache[url]
+        if (root && root.url) {
+          // notify all subscribers for the root entity itself
+          const resources = entityToResource[root.url]
+          if (resources) {
+            resources.forEach(r => {
+              const response = resourceCache[r]
+              const subscriptions = resourceToSubscription[r]
+              if (subscriptions) {
+                subscriptions.forEach(s => {
+                  if (!called[s.id]) {
+                    s.callback(err, response, s.unsubscribeFn)
+                    called[s.id] = true
+                  }
+                })
+              }
+            })
+          }
+
+          // next we traverse the root object looking for references to entities
+          // (fields containing object with .url fields)
+          // for each reference found we notify any subscribers
+          Object.keys(root).forEach(field => {
+            if (root[field].url) {
+              const resources = entityToResource[root[field].url]
+              if (resources) {
+                resources.forEach(resource => {
+                  let subscriptions = resourceToSubscription[resource]
+                  if (subscriptions) {
+                    subscriptions.forEach(subscription => {
+                      if (!called[subscription.id]) {
+                        subscription.callback(err, resourceCache[resource], subscription.unsubscribeFn)
+                        called[subscription.id] = true
+                      }
+                    })
+                  }
+                })
+              }
+            }
+          })
+        }
+      },
+
       publish: function publish (resource, data, err) {
         // on errors, notify all subscriptions *only* for original resource
         if (err) {
@@ -282,47 +333,7 @@ export default function (token, endpoint) {
         const rootEntity = data && (data._parent || data.url)
 
         if (rootEntity) {
-          const root = entityCache[rootEntity]
-          if (root && root.url) {
-            // notify all subscribers for the root entity itself
-            const resources = entityToResource[root.url]
-            if (resources) {
-              resources.forEach(r => {
-                const response = resourceCache[r]
-                const subscriptions = resourceToSubscription[r]
-                if (subscriptions) {
-                  subscriptions.forEach(s => {
-                    if (!called[s.id]) {
-                      s.callback(err, response, s.unsubscribeFn)
-                      called[s.id] = true
-                    }
-                  })
-                }
-              })
-            }
-
-            // next we traverse the root object looking for references to entities
-            // (fields containing object with .url fields)
-            // for each reference found we notify any subscribers
-            Object.keys(root).forEach(field => {
-              if (root[field].url) {
-                const resources = entityToResource[root[field].url]
-                if (resources) {
-                  resources.forEach(resource => {
-                    let subscriptions = resourceToSubscription[resource]
-                    if (subscriptions) {
-                      subscriptions.forEach(subscription => {
-                        if (!called[subscription.id]) {
-                          subscription.callback(err, resourceCache[resource], subscription.unsubscribeFn)
-                          called[subscription.id] = true
-                        }
-                      })
-                    }
-                  })
-                }
-              }
-            })
-          }
+          this.notifySubscribers(rootEntity, called, err)
         }
 
         // if we are publishing a collection-like (population) resource, we need to iterate over
@@ -331,21 +342,7 @@ export default function (token, endpoint) {
           const entities = data.items ? data.items : (data.url ? [data] : [])
 
           entities.forEach(entity => {
-            const resources = entityToResource[entity.url]
-            if (resources) {
-              resources.forEach(r => {
-                const response = resourceCache[r]
-                let subscriptions = resourceToSubscription[r]
-                if (subscriptions) {
-                  subscriptions.forEach(s => {
-                    if (!called[s.id]) {
-                      s.callback(err, response, s.unsubscribeFn)
-                      called[s.id] = true
-                    }
-                  })
-                }
-              })
-            }
+            this.notifySubscribers(entity.url, called, err)
           })
         }
       },
