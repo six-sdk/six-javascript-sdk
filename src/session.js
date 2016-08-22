@@ -99,35 +99,38 @@ export default function (token, endpoint) {
     // handle paginated data
     if (data && data.items) {
       // merge items into entityCache
-      data.items = data.items.map(item => {
-        if (item.url) {
-          item = deepMerge(entityCache[item.url], item)
-          // resolve connections with related domain objects
-          item = mergeRelations(item)
+      Object.keys(data).forEach(key => {
+        if (Array.isArray(data[key])) {
+          data[key] = data[key].map(item => {
+            if (item && item.url) {
+              item = deepMerge(entityCache[item.url], item)
+              // resolve connections with related domain objects
+              item = mergeRelations(item)
 
-          // domain specific merge (bid/ask)
-          item = mergeDomain(item)
-          entityCache[item.url] = item
-          entityToResource[item.url] = mergeIntoArray(entityToResource[item.url], resource)
+              // domain specific merge (bid/ask)
+              item = mergeDomain(item)
+              entityCache[item.url] = item
+              entityToResource[item.url] = mergeIntoArray(entityToResource[item.url], resource)
+            }
+            return item
+          })
         }
-        return item
       })
-    } else {
-      // merge into entityCache
-      if (data && data.url) {
-        cached = deepMerge(entityCache[data.url], data)
-        entityCache[data.url] = cached
-        entityToResource[data.url] = mergeIntoArray(entityToResource[data.url], resource)
-      }
-
-      // TODO: below must be done also for items in paginated responses
-
-      // resolve connections with related domain objects
-      cached = mergeRelations(cached)
-
-      // domain specific merge (bid/ask)
-      cached = mergeDomain(cached)
     }
+    // merge into entityCache
+    if (data && data.url) {
+      cached = deepMerge(entityCache[data.url], data)
+      entityCache[data.url] = cached
+      entityToResource[data.url] = mergeIntoArray(entityToResource[data.url], resource)
+    }
+
+    // TODO: below must be done also for items in paginated responses
+
+    // resolve connections with related domain objects
+    cached = mergeRelations(cached)
+
+    // domain specific merge (bid/ask)
+    cached = mergeDomain(cached)
 
     // merge into resourceCache
     cached = deepMerge(resourceCache[resource], cached)
@@ -157,6 +160,8 @@ export default function (token, endpoint) {
           if (obj.url) {
             obj[field]._parent = obj.url
           }
+        } else if (typeof obj[field] === 'object') {
+          mergeRelations(obj[field])
         }
       }
     }
@@ -274,7 +279,7 @@ export default function (token, endpoint) {
           // (fields containing object with .url fields)
           // for each reference found we notify any subscribers
           Object.keys(root).forEach(field => {
-            if (root[field].url) {
+            if (root[field] && root[field].url) {
               const resources = entityToResource[root[field].url]
               if (resources) {
                 resources.forEach(resource => {
@@ -342,7 +347,9 @@ export default function (token, endpoint) {
           const entities = data.items ? data.items : (data.url ? [data] : [])
 
           entities.forEach(entity => {
-            this.notifySubscribers(entity.url, called, err)
+            if (entity) {
+              this.notifySubscribers(entity.url, called, err)
+            }
           })
         }
       },

@@ -121,6 +121,104 @@ describe('cache',() => {
     })
   })
 
+  describe("should give same object to subscribers for favorites + entity resource", () => {
+
+    it('favorites then entity', (done) => {
+      const LISTING = {url: '/listings/848', foo: 'bar'}
+      const FAVORITES = {
+        url: '/pop',
+        favorites:[ {url: '/listings/848'}, {url: '/listings/847'}]
+      }
+
+      // queue up some responses
+      XMLHttpRequest.respondWith(FAVORITES)
+      XMLHttpRequest.respondWith(LISTING)
+
+      let called = 0
+      session.subscribe('/pop',(e,favorites) => {
+        session.subscribe('/listings/848',(e,listing2) => {
+          if (called++) return // ignore second call
+          expect(favorites).to.exist
+          expect(listing2).to.exist
+          expect(favorites.favorites[0] === listing2).to.be.true
+          done()
+        })
+      })
+    })
+
+    it('entity then resource', (done) => {
+      const LISTING = {url: '/listings/848', foo: 'bar'}
+      const FAVORITES = {
+        url: '/pop',
+        favorites:[ {url: '/listings/848'}, {url: '/listings/847'}]
+      }
+
+      // queue up some responses
+      XMLHttpRequest.respondWith(LISTING)
+      XMLHttpRequest.respondWith(FAVORITES)
+
+      let called = 0
+      session.subscribe('/listings/848',(e,listing2) => {
+        session.subscribe('/pop',(e,favorites) => {
+          if (called++) return // ignore second call
+          expect(favorites).to.exist
+          expect(listing2).to.exist
+          expect(favorites.favorites[0] === listing2).to.be.true
+          done()
+        })
+      })
+    })
+  })
+
+  describe("should give same object to subscribers for search + entity resource", () => {
+
+    it('favorites then entity', (done) => {
+      const LISTING = {url: '/listings/848', foo: 'bar'}
+      const SEARCH = {
+        url: '/pop',
+        search: { EQUITY: [ {url: '/listings/848'}, {url: '/listings/847'}] },
+      }
+
+      // queue up some responses
+      XMLHttpRequest.respondWith(SEARCH)
+      XMLHttpRequest.respondWith(LISTING)
+
+      let called = 0
+      session.subscribe('/pop',(e,search) => {
+        session.subscribe('/listings/848',(e,listing2) => {
+          if (called++) return // ignore second call
+          expect(search).to.exist
+          expect(listing2).to.exist
+          expect(search.search.EQUITY[0] === listing2).to.be.true
+          done()
+        })
+      })
+    })
+
+    it('entity then resource', (done) => {
+      const LISTING = {url: '/listings/848', foo: 'bar'}
+      const SEARCH = {
+        url: '/pop',
+        search: { EQUITY: [ {url: '/listings/848'}, {url: '/listings/847'}] },
+      }
+
+      // queue up some responses
+      XMLHttpRequest.respondWith(LISTING)
+      XMLHttpRequest.respondWith(SEARCH)
+
+      let called = 0
+      session.subscribe('/listings/848',(e,listing2) => {
+        session.subscribe('/pop',(e,search) => {
+          if (called++) return // ignore second call
+          expect(search).to.exist
+          expect(listing2).to.exist
+          expect(search.search.EQUITY[0] === listing2).to.be.true
+          done()
+        })
+      })
+    })
+  })
+
   it('should give same object to subscriber for entity and  entity/relation', (done) => {
     const QUOTES = {url: '/listings/848/quotes'}
     const LISTING = {url: '/listings/848', quotes: QUOTES}
