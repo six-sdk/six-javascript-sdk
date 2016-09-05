@@ -14,6 +14,7 @@ where **Major.Minor.Patch** is interpreted as **Breaking.Feature.Fix**.
 - Basic Session API complete (subscribe,refresh, create, update, remove)
 - Caching layer works on entity level
 - Bid/Ask sync between Orderbooks and Quotes implemented
+- Retries with back-off
 
 
 [Unreleased]: https://github.com/six-sdk/six-javascript-sdk/compare/v0.4.2...HEAD
