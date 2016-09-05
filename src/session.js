@@ -97,26 +97,34 @@ export default function (token, endpoint) {
     let cached = data
 
     // handle paginated data
-    if (data && data.items) {
-      // merge items into entityCache
-      Object.keys(data).forEach(key => {
-        if (Array.isArray(data[key])) {
-          data[key] = data[key].map(item => {
-            if (item && item.url) {
-              item = deepMerge(entityCache[item.url], item)
-              // resolve connections with related domain objects
-              item = mergeRelations(item)
+    // merge items into entityCache
+    Object.keys(data).forEach(key => {
+      if (Array.isArray(data[key])) {
+        data[key] = data[key].map(item => {
+          if (item && item.url) {
+            item = deepMerge(entityCache[item.url], item)
+            // resolve connections with related domain objects
+            item = mergeRelations(item)
 
-              // domain specific merge (bid/ask)
-              item = mergeDomain(item)
-              entityCache[item.url] = item
-              entityToResource[item.url] = mergeIntoArray(entityToResource[item.url], resource)
-            }
-            return item
-          })
-        }
-      })
-    }
+            // domain specific merge (bid/ask)
+            item = mergeDomain(item)
+            entityCache[item.url] = item
+            entityToResource[item.url] = mergeIntoArray(entityToResource[item.url], resource)
+          }
+          return item
+        })
+      } else if (data[key] && data[key].url) {
+        let item = data[key]
+        item = deepMerge(entityCache[item.url], item)
+        // resolve connections with related domain objects
+        item = mergeRelations(item)
+
+        // domain specific merge (bid/ask)
+        item = mergeDomain(item)
+        entityCache[item.url] = item
+        entityToResource[item.url] = mergeIntoArray(entityToResource[item.url], resource)
+      }
+    })
     // merge into entityCache
     if (data && data.url) {
       cached = deepMerge(entityCache[data.url], data)
