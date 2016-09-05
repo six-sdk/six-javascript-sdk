@@ -9,11 +9,11 @@
 //   return xhr;
 // }
 
-export const fetch = function fetch (token, url, endpoint, context, {method, body} = {method: 'GET', body: null}) {
+export function fetch (token, url, endpoint, context, {method, body} = {method: 'GET', body: null}) {
   return new Promise(function (resolve, reject) {
     let req = new XMLHttpRequest()
 
-    req.onerror = (event) => {
+    req.onerror = () => {
       reject({
         code: 'AJAX_ERROR',
         title: 'Request to endpoint failed',
@@ -26,7 +26,7 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
       })
     }
 
-    req.ontimeout = (event) => {
+    req.ontimeout = () => {
       reject({
         code: 'AJAX_ERROR',
         title: 'Request to endpoint timed out',
@@ -131,7 +131,7 @@ export const fetch = function fetch (token, url, endpoint, context, {method, bod
   })
 }
 
-export const createFetch = function createFetch (token, url, endpoint, context, {method, body} = {method: 'GET', body: null}) {
+export function createFetch (token, url, endpoint, context, {method, body} = {method: 'GET', body: null}) {
   return function savedFetch () {
     return fetch(token, url, endpoint, context, {method, body})
   }

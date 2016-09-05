@@ -1,6 +1,6 @@
 import {fetch} from './fetch'
 import {DEFAULT_ENDPOINT} from './defaults'
-
+/* eslint no-console: 0 */
 export default {
   authenticateWithCredentials: function authenticateWithCredentials (client_id, client_secret, callback, endpoint = DEFAULT_ENDPOINT) {
     console.warn('Never bundle your credentials with your browser code!','endpoint',endpoint)

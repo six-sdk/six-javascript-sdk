@@ -102,3 +102,56 @@ describe('merge', () => {
     session._internal.publish('/population/ERICSSON_POPULATION', population);
   });
 });
+
+describe('merge options view', () => {
+  let session;
+  let optionsView;
+  let quoteUpdate;
+  const xhr = global.XMLHttpRequest;
+
+  beforeEach(() => {
+    session = connect('fake-token');
+    global.XMLHttpRequest = FakeXMLHttpRequest();
+    optionsView = {
+      id: 'ERICSSON_POPULATION',
+      options: [
+        {
+          id: '848',
+          quotes: {
+            lastPaid: 67.25,
+            url: 'https://api.six.se/v2/listings/848/quotes'
+          },
+          url: 'https://api.six.se/v2/listings/848'
+        }
+      ],
+      url: 'https://api.six.se/v2/population/ERICSSON_POPULATION'
+    };
+    quoteUpdate = {
+      _parent: 'https://api.six.se/v2/listings/848',
+      lastPaid: 30.599,
+      url: 'https://api.six.se/v2/listings/848/quotes'
+    };
+  });
+
+  afterEach(() => {
+    global.XMLHttpRequest = xhr;
+  });
+
+  it('should merge quotes on listings in options view correctly', (done) => {
+    let counter = 0;
+    session.subscribe('/population/ERICSSON_POPULATION',
+      (err, data, unsub) => {
+        counter++;
+        if(counter === 1) {
+          expect(data.options[0].quotes.lastPaid).to.equal(67.25);
+        }
+        if(counter === 2) {
+          expect(data.options[0].quotes.lastPaid).to.equal(30.599);
+          done();
+        }
+      }
+    );
+    session._internal.publish('/population/ERICSSON_POPULATION', optionsView);
+    session._internal.publish('/listings/848/quotes', quoteUpdate);
+  });
+});
