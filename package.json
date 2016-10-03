@@ -1,6 +1,6 @@
 {
   "name": "six-sdk",
-  "version": "0.6.2-0",
+  "version": "0.6.2",
   "description": "SIX Javascript SDK",
   "main": "lib",
   "scripts": {

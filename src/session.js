@@ -467,6 +467,10 @@ export default function (token, endpoint) {
       return newSession
     },
 
+    withLocale: function withLocale (locale) {
+      return this.withContext({locale: locale})
+    },
+
     setToken: function setToken (newToken) {
       currentToken = newToken
     }

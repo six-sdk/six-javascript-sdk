@@ -95,8 +95,14 @@ To create a session with additional context:
 ```javascript
 var session = Six.connect(TOKEN).withContext({userId: '16ef65e39e6114fa6d9510042ad83472c9db756a'})
 ```
-
 For more information about session contexts, see the API documentation.
+
+The session provides syntactic sugar for the common case of setting **locale** in the context:
+
+```javascript
+var session = Six.connect(TOKEN).withLocale('sv-SE')
+```
+
 
 ### Getting data from the API
 
@@ -172,7 +178,7 @@ setInterval(function updateToken() {
 
 The SDK caches all resources fetched from the API, and all subscribers for the same resource will receive the same data when new data arrives.This means that multiple components on a page using the same underlying data will be kept in sync.
 
-Data is cached until the session is destroyed (typically the next pageview) or ```session.clearCache()``` is called. 
+Data is cached until the session is destroyed (typically the next pageview) or ```session.clearCache()``` is called.
 
 <!-- TODO: something about entities and matching in populations -->
 

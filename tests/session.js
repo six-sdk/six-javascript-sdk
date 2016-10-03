@@ -6,11 +6,29 @@ import FakeXMLHttpRequest from './fake-xml-http-request'
 
 import SDK from '../src'
 
+// shared test data
+const TOKEN = 'fake-token'
+
 // test the mock first
 describe('FakeXMLHttpRequest', () => {})
 
+describe('withLocale', () => {
+  let session = null
+
+  beforeEach(() => {
+    session = SDK.connect(TOKEN)
+  });
+
+  it('should expose locale on _internal._context.locale', () => {
+    const locale = 'foo-bar'
+    const newSession = session.withLocale(locale)
+    expect(session._internal._context).to.exist
+    expect(session._internal._context.locale).to.not.exist
+    expect(newSession._internal._context.locale).to.equal(locale)
+  })
+})
+
 describe('subscribe(resource,[callback])',() => {
-  const TOKEN = 'fake-token'
   const response = {id: '848', url: '/listing/848'}
   let session = null
   let clock
