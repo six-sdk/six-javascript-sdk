@@ -58,6 +58,76 @@ describe('merge', () => {
     session._internal.publish('/listings/848/quotes', quoteUpdate);
   });
 
+  // it('should merge removed items correctly', (done) => {
+  //   let counter = 0;
+  //   session.subscribe('/collection',
+  //     (err, data, unsub) => {
+  //       console.log('sub /collection',err,data)
+  //       counter++;
+  //       if(counter === 1) {
+  //         expect(data.id).to.equal('c1')
+  //         expect(data.listings.EQUITY).to.exist
+  //         expect(data.listings.EQUITY.length).to.equal(1);
+  //       }
+  //       if(counter === 2) {
+  //         expect(data.id).to.equal('c1')
+  //         expect(data.listings).to.not.exist
+  //         done();
+  //       }
+  //     }
+  //   );
+  //   session._internal.publish('/collection', {
+  //     url: '/collection',
+  //     id: 'c1',
+  //     listings: {
+  //         EQUITY: [
+  //           {
+  //             url: '/collection/1'
+  //           }
+  //         ]
+  //     }
+  //   });
+  //   session._internal.publish('/collection', {
+  //     url: '/collection',
+  //     id: 'c1',
+  //     listings: {
+  //         EQUITY: [
+  //         ]
+  //     }    });
+  // });
+
+
+  it('should merge removed items correctly (II)', (done) => {
+    let counter = 0;
+    session.subscribe('/collection',
+      (err, data, unsub) => {
+        counter++;
+        if(counter === 1) {
+          expect(data.id).to.equal('c1')
+          expect(data.listings.EQUITY).to.exist
+          expect(data.listings.EQUITY.length).to.equal(1);
+        }
+        if(counter === 2) {
+          expect(data).to.deep.equal({})
+          done();
+        }
+      }
+    );
+    session._internal.publish('/collection', {
+      url: '/collection',
+      id: 'c1',
+      listings: {
+          EQUITY: [
+            {
+              url: '/collection/1'
+            }
+          ]
+      }
+    });
+    session._internal.publish('/collection', {}, null, true);
+  });
+
+
   it('should merge population update into quote and notify subscribers', (done) => {
     let counter = 0;
     session.subscribe('/listings/848/quotes',

@@ -17,7 +17,9 @@
               if (token) {
                 window.session = Six.connect(token)
                 console.log('session ready')
-                window.unsub = session.subscribe('/listings/848/quotes', function(err,data) { console.log('(quotes) > ','data',data,'err',err) })
+                //window.unsub = session.subscribe('/populations/OMX_STOCKHOLM_LARGE_CAP_STOCKS', function(err,data) { console.log('(population) > ','data',data,'err',err) })
+                //window.unsub = session.subscribe('/listings/848/quotes', function(err,data) { console.log('(quotes) > ','data',data,'err',err) })
+                session.subscribe('/listings/848', function(err,data) { console.log('(listing) > ','data',data,'err',err) })
               }
             })
           }
