@@ -72,7 +72,7 @@ describe('cache',() => {
     })
   })
 
-  describe("should give same object to subscribers for population + entity resource", () => {
+  describe("should give deep equal objects to subscribers for population + entity resource", () => {
 
     it('population then entity', (done) => {
       const LISTING = {url: '/listings/848', foo: 'bar'}
@@ -91,7 +91,7 @@ describe('cache',() => {
           if (called++) return // ignore second call
           expect(population).to.exist
           expect(listing2).to.exist
-          expect(population.items[0] === listing2).to.be.true
+          expect(population.items[0]).to.deep.equal(listing2)
           done()
         })
       })
@@ -114,7 +114,7 @@ describe('cache',() => {
           if (called++) return // ignore second call
           expect(population).to.exist
           expect(listing2).to.exist
-          expect(population.items[0] === listing2).to.be.true
+          expect(population.items[0]).to.deep.equal(listing2)
           done()
         })
       })
@@ -123,6 +123,7 @@ describe('cache',() => {
 
   describe("should give same object to subscribers for favorites + entity resource", () => {
 
+    // TODO: favorites don't look like this
     it('favorites then entity', (done) => {
       const LISTING = {url: '/listings/848', foo: 'bar'}
       const FAVORITES = {
@@ -140,7 +141,8 @@ describe('cache',() => {
           if (called++) return // ignore second call
           expect(favorites).to.exist
           expect(listing2).to.exist
-          expect(favorites.favorites[0] === listing2).to.be.true
+          // expect(favorites.favorites[0] === listing2).to.be.true
+          expect(favorites.favorites[0]).to.deep.equal(listing2)
           done()
         })
       })
@@ -163,7 +165,8 @@ describe('cache',() => {
           if (called++) return // ignore second call
           expect(favorites).to.exist
           expect(listing2).to.exist
-          expect(favorites.favorites[0] === listing2).to.be.true
+          //expect(favorites.favorites[0] === listing2).to.be.true
+          expect(favorites.favorites[0]).to.deep.equal(listing2)
           done()
         })
       })
@@ -189,7 +192,8 @@ describe('cache',() => {
           if (called++) return // ignore second call
           expect(search).to.exist
           expect(listing2).to.exist
-          expect(search.search.EQUITY[0] === listing2).to.be.true
+          //expect(search.search.EQUITY[0] === listing2).to.be.true
+          expect(search.search.EQUITY[0]).to.deep.equal(listing2)
           done()
         })
       })
@@ -212,7 +216,8 @@ describe('cache',() => {
           if (called++) return // ignore second call
           expect(search).to.exist
           expect(listing2).to.exist
-          expect(search.search.EQUITY[0] === listing2).to.be.true
+          //expect(search.search.EQUITY[0] === listing2).to.be.true
+          expect(search.search.EQUITY[0]).to.deep.equal(listing2)
           done()
         })
       })
@@ -220,7 +225,7 @@ describe('cache',() => {
   })
 
   it('should give same object to subscriber for entity and  entity/relation', (done) => {
-    const QUOTES = {url: '/listings/848/quotes'}
+    const QUOTES = {url: '/listings/848/quotes', foo: 'bork'}
     const LISTING = {url: '/listings/848', quotes: QUOTES}
 
     // queue up some responses
@@ -228,12 +233,16 @@ describe('cache',() => {
     XMLHttpRequest.respondWith(QUOTES)
 
     let listing = null
-    session.subscribe('/listing/848',(e,data) => listing = data)
+    //session.subscribe('/listing/848',(e,data) => listing = data)
+    session.subscribe('/listing/848',(e,data) => {
+      listing = data
+    })
+
 
     session.subscribe('/listing/848/quotes',(e,quotes) => {
       expect(listing).to.exist
       expect(quotes).to.exist
-      expect(listing.quotes === quotes).to.be.true
+      expect(listing.quotes).to.deep.equal(quotes)
       done()
     })
 
@@ -288,7 +297,7 @@ describe('cache',() => {
     session.subscribe('/resource?filter=foo',(e,listing) => {
       session.subscribe('/resource?filter=bar',(e,listing2) => {
         if (called++) return // ignore second call
-        expect(listing === listing2).to.be.true
+        expect(listing).to.deep.equal(listing2)
 
         expect(listing).to.exist
         expect(listing2).to.exist
@@ -370,7 +379,7 @@ describe('cache',() => {
       session.subscribe('/listing/848/orderbook',(e,orderbook) => {
         expect(listing).to.exist
         expect(listing.orderbook).to.exist
-        expect(listing.orderbook === orderbook).be.true
+        expect(listing.orderbook).to.deep.equal(orderbook)
         expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
         expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
 
@@ -404,10 +413,8 @@ describe('cache',() => {
 
       session.subscribe('/listing/848/orderbook',(e,orderbook) => {
         expect(listing).to.exist
-        expect(listing.orderbook).to.exist
-        expect(listing.orderbook === orderbook).be.true
-        expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
-        expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
+        expect(orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
+        expect(orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
 
         done()
       })
@@ -454,7 +461,7 @@ describe('cache',() => {
       session.subscribe('/listing/848/orderbook',(e,orderbook) => {
         expect(listing).to.exist
         expect(listing.orderbook).to.exist
-        expect(listing.orderbook === orderbook).be.true
+        expect(listing.orderbook).to.deep.equal(orderbook)
         expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
         expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
         done()
@@ -494,7 +501,7 @@ describe('cache',() => {
       session.subscribe('/listing/848',(e,listing) => {
         expect(listing).to.exist
         expect(listing.orderbook).to.exist
-        expect(listing.orderbook === orderbook).be.true
+        expect(listing.orderbook).to.deep.equal(orderbook)
         expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
         expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
 
@@ -547,7 +554,7 @@ describe('cache',() => {
 
         expect(listing).to.exist
         expect(listing.orderbook).to.exist
-        expect(listing.orderbook === orderbook).be.true
+        expect(listing.orderbook).to.deep.equal(orderbook)
         expect(listing.orderbook.levels[0].bidPrice).to.equal(listing.quotes.bidPrice)
         expect(listing.orderbook.levels[0].askPrice).to.equal(listing.quotes.askPrice)
 

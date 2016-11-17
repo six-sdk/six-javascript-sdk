@@ -4,7 +4,7 @@ console.log(`Loading Six Javascript SDK ${VersionInfo.version} (${VersionInfo.gi
 import './polyfills'
 
 import { DEFAULT_ENDPOINT } from './defaults'
-import session, { authenticateWithCredentials } from './session'
+import session from './session'
 import internal from './internal'
 
 export default {

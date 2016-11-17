@@ -1,67 +1,7 @@
 import {createFetch} from './fetch'
+import {retry} from './retry'
+import {deepMerge, findAllEntitiesIn, findAllWithReferenceTo} from './merge'
 import VersionInfo from './meta-version'
-
-const MAX_RETRIES = 100
-const MAX_RETRY_TIMEOUT = 900000// 15 minutes
-const RETRY_START_TIMEOUT = 5000
-const RETRY_TIMEOUT_INCREMENT = 25000
-
-const retry = function retry (fetchFunc, failFunc, abortFunc) {
-  let retryTimeout = window.RETRY_START_TIMEOUT || RETRY_START_TIMEOUT
-  let retries = 0
-  return new Promise(function (resolve, reject) {
-    function doRetry (err) {
-      if (abortFunc && abortFunc()) {
-        reject(Object.assign({}, err, {
-          code: 'ABORTED',
-          title: 'Request was aborted',
-          description: 'The request was aborted'
-        }))
-      } else {
-        const status = err.details.status
-        // status 0 should be transport errors and 5xx server errors
-        if ((status === 0 || (status >= 500 && status < 600)) && retries < (window.MAX_RETRIES || MAX_RETRIES)) {
-          failFunc(err)
-          setTimeout(() => {
-            retries++
-            if (retryTimeout < (window.MAX_RETRY_TIMEOUT || MAX_RETRY_TIMEOUT)) {
-              retryTimeout = retryTimeout + (window.RETRY_TIMEOUT_INCREMENT || RETRY_TIMEOUT_INCREMENT)
-            }
-            fetchFunc().then(resolve).catch(doRetry)
-          }, retryTimeout)
-        } else {
-          reject(err)
-        }
-      }
-    }
-    fetchFunc().then(resolve).catch(doRetry)
-  })
-}
-
-const deepMerge = function deepMerge (target, source) {
-  if (!target) return source
-  if (!source) return target
-
-  for (var prop in source) {
-    if (source.hasOwnProperty(prop)) {
-      if (Array.isArray(source[prop])) {
-        target[prop] = source[prop]
-      } else if (target[prop] && typeof source[prop] === 'object') {
-        deepMerge(target[prop], source[prop])
-      } else {
-        target[prop] = source[prop]
-      }
-    }
-  }
-  return target
-}
-
-const mergeIntoArray = function mergeIntoArray (arr, item) {
-  if (!arr) return [item]
-  let i = arr.indexOf(item)
-  if (i === -1) arr.push(item)
-  return arr
-}
 
 const nextId = (function generateNextId () {
   let id = 0
@@ -73,7 +13,7 @@ const nextId = (function generateNextId () {
 
 export default function (token, endpoint) {
   let currentToken = token
-  // TODO: can we use Map?
+
   const subscriptions = {}
   const resourceToSubscription = {}
 
@@ -90,134 +30,6 @@ export default function (token, endpoint) {
       // remove resource -> subscription mapping
       resourceToSubscription[subscription.resource] = resourceToSubscription[subscription.resource].filter(s => !(s.id === id))
     }
-  }
-
-  // merges new data into the cache
-  const merge = function merge (resource, data) {
-    let cached = data
-
-    if (data && data.url) {
-      // handle paginated data
-      // merge items into entityCache
-      Object.keys(data).forEach(key => {
-        if (Array.isArray(data[key])) {
-          data[key] = data[key].map(item => {
-            if (item && item.url) {
-              item = deepMerge(entityCache[item.url], item)
-              // resolve connections with related domain objects
-              item = mergeRelations(item)
-
-              // domain specific merge (bid/ask)
-              item = mergeDomain(item)
-              entityCache[item.url] = item
-              entityToResource[item.url] = mergeIntoArray(entityToResource[item.url], resource)
-            }
-            return item
-          })
-        } else if (data[key] && data[key].url) {
-          let item = data[key]
-          item = deepMerge(entityCache[item.url], item)
-          // resolve connections with related domain objects
-          item = mergeRelations(item)
-
-          // domain specific merge (bid/ask)
-          item = mergeDomain(item)
-          entityCache[item.url] = item
-          entityToResource[item.url] = mergeIntoArray(entityToResource[item.url], resource)
-        }
-      })
-
-      // merge into entityCache
-      cached = deepMerge(entityCache[data.url], data)
-      entityCache[data.url] = cached
-      entityToResource[data.url] = mergeIntoArray(entityToResource[data.url], resource)
-    }
-
-    // TODO: below must be done also for items in paginated responses
-
-    // resolve connections with related domain objects
-    cached = mergeRelations(cached)
-
-    // domain specific merge (bid/ask)
-    cached = mergeDomain(cached)
-
-    // merge into resourceCache
-    cached = deepMerge(resourceCache[resource], cached)
-    resourceCache[resource] = cached
-
-    return cached
-  }
-
-  // merges a cached domain object with the rest of the domain
-  // i.e resolves all relations
-  const mergeRelations = function mergeRelations (obj) {
-    if (!obj) return obj
-
-    // dereference all subresources
-    for (var field in obj) {
-      if (obj.hasOwnProperty(field) && typeof obj[field] === 'object') {
-        if (obj[field] && obj[field].url) {
-          let cached = entityCache[obj[field].url]
-          if (!cached) {
-            entityCache[obj[field].url] = obj[field]
-          } else {
-            entityCache[obj[field].url] = deepMerge(entityCache[obj[field].url], obj[field])
-          }
-          obj[field] = cached || obj[field]
-
-          // connect subresources back to parent
-          if (obj.url) {
-            obj[field]._parent = obj.url
-          }
-        } else if (typeof obj[field] === 'object') {
-          mergeRelations(obj[field])
-        }
-      }
-    }
-
-    // example /listings/848/quotes -> /listing/848
-    const parentUrl = obj && (obj._parent || obj.url)
-
-    if (parentUrl) {
-      const root = entityCache[parentUrl]
-      if (root && root.url) {
-        Object.keys(root).forEach((key) => {
-          if (root[key].url === obj.url) {
-            root[key] = obj
-          }
-        })
-      }
-    }
-    return obj
-  }
-
-  // domain-specific merge function, handles Bid/Ask syncing etc
-  const mergeDomain = function mergeDomain (obj) {
-    if (!obj) return obj
-
-    // Orderbooks Level 1 Bid/Ask should match Quotes Bid/Ask
-    let listingWithOrderbook = obj.orderbook ? obj : null
-
-    // special handling for "naked" orderbooks
-    if (obj.url && obj.url.endsWith('/orderbook')) {
-      let entityUrl = obj.url.substring(0, obj.url.length - '/orderbook'.length)
-      listingWithOrderbook = entityCache[entityUrl]
-
-      if (listingWithOrderbook && (!listingWithOrderbook.orderbook)) {
-        listingWithOrderbook.orderbook = obj
-      }
-    }
-
-    if (listingWithOrderbook) {
-      if (listingWithOrderbook.quotes && listingWithOrderbook.quotes.bidPrice && listingWithOrderbook.orderbook.levels) {
-        listingWithOrderbook.orderbook.levels[0].bidPrice = listingWithOrderbook.quotes.bidPrice
-      }
-      if (listingWithOrderbook.quotes && listingWithOrderbook.quotes.askPrice && listingWithOrderbook.orderbook.levels) {
-        listingWithOrderbook.orderbook.levels[0].askPrice = listingWithOrderbook.quotes.askPrice
-      }
-    }
-
-    return obj
   }
 
   return {
@@ -264,103 +76,114 @@ export default function (token, endpoint) {
         }
       },
 
-      notifySubscribers: function notifySubscribers (url, called, err) {
-        const root = entityCache[url]
-        if (root && root.url) {
-          // notify all subscribers for the root entity itself
-          const resources = entityToResource[root.url]
-          if (resources) {
-            resources.forEach(r => {
-              const response = resourceCache[r]
-              const subscriptions = resourceToSubscription[r]
-              if (subscriptions) {
-                subscriptions.forEach(s => {
-                  if (!called[s.id]) {
-                    s.callback(err, response, s.unsubscribeFn)
-                    called[s.id] = true
-                  }
-                })
-              }
-            })
-          }
-
-          // next we traverse the root object looking for references to entities
-          // (fields containing object with .url fields)
-          // for each reference found we notify any subscribers
-          Object.keys(root).forEach(field => {
-            if (root[field] && root[field].url) {
-              const resources = entityToResource[root[field].url]
-              if (resources) {
-                resources.forEach(resource => {
-                  let subscriptions = resourceToSubscription[resource]
-                  if (subscriptions) {
-                    subscriptions.forEach(subscription => {
-                      if (!called[subscription.id]) {
-                        subscription.callback(err, resourceCache[resource], subscription.unsubscribeFn)
-                        called[subscription.id] = true
-                      }
-                    })
-                  }
-                })
-              }
-            }
-          })
-        }
-      },
-
-      publish: function publish (resource, data, err) {
+      publish: function publish (resource, data, err, replace) {
         // on errors, notify all subscriptions *only* for original resource
         if (err) {
           this.publishError(resource, data, err)
           return
         }
 
-        // merge data into cache
-        data = merge(resource, data)
+        // domain specific, make sure 'naked' orderbooks are referenced
+        // from their root listing.
+        // !! Note this is only for compat reasons, it fails if /listing/x is
+        // merged before /listing/x/orderbook. Any resource interested in quotes
+        // should always include 'orderbook.url'
+        if (data.url && data.url.endsWith('/orderbook')) {
+          const entityUrl = data.url.substring(0, data.url.length - '/orderbook'.length)
+          const listing = entityCache[entityUrl]
+          if (listing && (!listing.orderbook)) {
+            listing.orderbook = data
+          }
+        }
 
-        // Optimize so we don't call callbacks more than once/publish.
+        // find all entities (recursivly) in resource
+        const entities = findAllEntitiesIn(data)
+
+        // merge entities into cache
+        Object.values(entities).forEach(entity => {
+          entityCache[entity.url] = deepMerge(entityCache[entity.url], entity, replace)
+        })
+
+        // merge cache -> entities
+        Object.values(entities).forEach(entity => {
+          Object.assign(entity, entityCache[entity.url])
+        })
+
+        // resolve all entity references, with entity object instances from the cache
+        Object.values(entities).forEach(entity => {
+          for (var field in entity) {
+            if (entity.hasOwnProperty(field)) {
+              if (typeof entity[field] === 'object') {
+                if (entity[field].url) {
+                  entity[field] = entityCache[entity[field].url] || entity[field]
+                }
+              }
+            }
+          }
+        })
+
+        // find all entities (recursivly) in the cache with a reference to any
+        // of the entities in the resource we want to publish
+        const affectedEntities = Object.assign({}, entities)
+        Object.values(entities).forEach(entity => {
+          Object.assign(affectedEntities, findAllWithReferenceTo(entityCache, entity))
+        })
+
+        // entityToResource cache
+        Object.values(affectedEntities).forEach(entity => {
+          entityToResource[entity.url] = entityToResource[entity.url] || {}
+          entityToResource[entity.url][resource] = true
+        })
+
+        // cache resource
+        if (data.url) {
+          resourceCache[resource] = affectedEntities[data.url]
+        } else {
+          resourceCache[resource] = deepMerge(resourceCache[resource], data, replace)
+        }
+
+        // Domain specific, fixup level 1 in all cached listings with orderbooks
+        Object.values(entityCache).forEach(e => {
+          if (e.orderbook && e.orderbook.levels && e.orderbook.levels.length > 0) {
+            if (e.quotes && e.quotes.bidPrice) {
+              e.orderbook.levels[0].bidPrice = e.quotes.bidPrice
+            }
+            if (e.quotes && e.quotes.askPrice) {
+              e.orderbook.levels[0].askPrice = e.quotes.askPrice
+            }
+          }
+        })
+
+        // fetch all resources to notify
+        const resourcesToNotify = Object.create(null) // in lieu of Set
+        Object.values(affectedEntities).forEach(entity => {
+          Object.keys(entityToResource[entity.url]).forEach(r => (resourcesToNotify[r] = true))
+        })
+
+        // always notify all subscriptions for original resource
+        // (not all responses contains an .url field we can map to entities)
+        resourcesToNotify[resource] = true
+
+        // Optimize so we don't call callbacks more than once per publish.
         // Not strictly necessary, but helps in tests and debugging
         const called = Object.create(null) // in lieu of Set
 
-        // TODO: should we give all subscribers a copy of the data so they don't pollute the cache by misstake?
+        // notify all subscriptions
+        Object.keys(resourcesToNotify).forEach(r => {
+          const subscriptions = resourceToSubscription[r]
+          if (subscriptions) {
+            subscriptions.forEach(subscription => {
+              this.debug && console.log('calling subscription', subscription)
+              if (!called[subscription.id]) {
+                // TODO: should we give all subscribers a copy of the data so they don't pollute the cache by misstake?
+                subscription.callback(err, resourceCache[r], subscription.unsubscribeFn)
+                called[subscription.id] = true
+              }
+            })
+          }
+        })
 
-        // notify all subscriptions for original resource
-        // (not all responses contains an .url field we can map to entities)
-        const subscriptions = resourceToSubscription[resource]
-        if (subscriptions) {
-          subscriptions.forEach(subscription => {
-            if (!called[subscription.id]) {
-              subscription.callback(err, data, subscription.unsubscribeFn)
-              called[subscription.id] = true
-            }
-          })
-        }
-
-        // we need to find the 'root' entity to figure out who to notify
-        // i.e publish(/listings/848/orderbook) should notify subscribers of
-        // /listings/848 <-- This is the root
-        // /listings/848/quotes
-        // /listings/848/orderbok
-        // etc
-        //
-        // We find the root by looking for an _parent reference
-        const rootEntity = data && (data._parent || data.url)
-
-        if (rootEntity) {
-          this.notifySubscribers(rootEntity, called, err)
-        }
-
-        // if we are publishing a collection-like (population) resource, we need to iterate over
-        // all the contained entities and notify all subscribers
-        if (data) {
-          const entities = data.items ? data.items : (data.url ? [data] : [])
-
-          entities.forEach(entity => {
-            if (entity) {
-              this.notifySubscribers(entity.url, called, err)
-            }
-          })
-        }
+        return
       },
 
       fetch: function fetch (resource, callback) {
@@ -409,11 +232,11 @@ export default function (token, endpoint) {
       return sub.unsubscribeFn
     },
 
-    refresh: function refresh (resource) {
+    refresh: function refresh (resource, replace) {
       this.debug && console.log('refresh', resource)
       const errFunc = (err) => { this._internal.publishError(resource, null, err) }
       retry(createFetch(currentToken, resource, endpoint, this._internal._context), errFunc, () => { return !this.hasSubscriptions(resource) })
-      .then((response) => setTimeout(() => this._internal.publish(resource, response, null), 0))
+      .then((response) => setTimeout(() => this._internal.publish(resource, response, null, replace), 0))
       .catch(errFunc)
     },
 
@@ -447,7 +270,7 @@ export default function (token, endpoint) {
 
       promise.then((response) => setTimeout(() => {
         delete resourceCache[resource]
-        this._internal.publish(resource, null, null)
+        this._internal.publish(resource, {}, null, true)
       }, 0))
       promise.catch(errFunc)
 

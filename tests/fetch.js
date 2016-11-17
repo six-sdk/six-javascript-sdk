@@ -26,18 +26,16 @@ describe('when receiving error from api', function api_errors() {
     global.XMLHttpRequest = xhr
   })
 
-  it('should add details to the error object', function test_has_details_on_error_object(done) {
-    let subject = fetch(token, url, endpoint, context)
-    subject.then(function success (data) {
-      assert.fail('This should have failed')
-    })
-    subject.catch(function failed (err) {
-      expect(err.details).to.exist
-      expect(err.details.status).to.equal(500)
-      expect(err.requestId).to.equal('5d269742-8311-4065-84dd-6493b287fad6')
-      done()
-    })
+  it('should add details to the error object', function test_has_details_on_error_object() {
     XMLHttpRequest.respondWith(error, 500)
-
+    return fetch(token, url, endpoint, context)
+      .then(function success (data) {
+        assert.fail('This should have failed')
+      })
+      .catch(function failed (err) {
+        expect(err.details).to.exist
+        expect(err.details.status).to.equal(500)
+        expect(err.requestId).to.equal('5d269742-8311-4065-84dd-6493b287fad6')
+      })
   })
 })
