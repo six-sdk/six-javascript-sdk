@@ -50,7 +50,7 @@
     "mocha-jsdom": "^1.0.0",
     "semver": "^5.1.0",
     "sinon": "^1.17.3",
-    "six-widget-release-support": "0.0.1-0",
+    "six-widget-release-support": "0.0.1",
     "webpack": "^1.12.9",
     "webpack-dev-server": "^1.14.1"
   },
