@@ -72,7 +72,7 @@ Before using the any of the methods in the SDK you must retrieve an authenticati
 All methods to retrive data from the API is attached to the Session object.
 
 - subscribe(resource,callback(error,data,unsubsribe)) -> unsubscribeFn
-- refresh(resource)
+- refresh(resource,replace)
 - create(resource,data) -> Promise
 - update(resource,data) -> Promise
 - remove(resource) -> Promise
@@ -190,7 +190,12 @@ To populate the cache with new data, there is a method ```session.refresh(resour
 session.refresh('/listings/848')
 ```
 
-## Contact
+There is also a variant for when you want to *replace* the contents in the cache (default is to merge).
+Useful i CRUD scenarios when server state has been updated.
+
+```javascript
+session.refresh('/favorites/04fa5ee8-b0ad-11e6-b0bc-7b4b6f1f56ce', true)
+```
 
 ## License
 
