@@ -1,3 +1,6 @@
+// various helper functions to support the cache merge functionality
+
+// recursivly merge two objects
 export const deepMerge = function deepMerge (target, source, replace) {
   // console.log('deepMerge ', target, source, replace)
   if (!target) return source
@@ -73,28 +76,3 @@ export const findAllWithReferenceTo = function findAllWithReferenceTo (resource,
 
   return result
 }
-
-// const entities = findAllEntitiesIn(resource)
-
-// TODO: create test
-// const entities = findAllEntitiesIn({
-//   url: '1',
-//   name: '1',
-//   sub: {
-//     url: '2'
-//   },
-//   ignored: {
-//     yada: 'yada',
-//     subsub: {
-//       url: '3'
-//     }
-//   },
-//   arr: [
-//     {url: '4'},
-//     {ignored: true, sub: {url: '6'}},
-//     {url: '5'}
-//   ]
-// })
-//
-// console.log('..................')
-// console.dir(entities)
