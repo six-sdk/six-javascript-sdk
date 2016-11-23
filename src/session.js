@@ -1,6 +1,6 @@
 import {createFetch} from './fetch'
 import {retry} from './retry'
-import {deepMerge, findAllEntitiesIn, findAllWithReferenceTo} from './merge'
+import {deepMerge, findAllEntitiesIn} from './merge'
 import VersionInfo from './meta-version'
 
 const nextId = (function generateNextId () {
@@ -124,10 +124,14 @@ export default function (token, endpoint) {
 
         // find all entities (recursivly) in the cache with a reference to any
         // of the entities in the resource we want to publish
+        // TODO: remove this if not needed anymore
         const affectedEntities = Object.assign({}, entities)
-        Object.values(entities).forEach(entity => {
-          Object.assign(affectedEntities, findAllWithReferenceTo(entityCache, entity))
-        })
+        // Object.values(entities).forEach(entity => {
+        //   Object.assign(affectedEntities, findAllWithReferenceTo(entityCache, entity))
+        // })
+
+        // console.log('entities', entities)
+        // console.log('affectedEntities', affectedEntities)
 
         // entityToResource cache
         Object.values(affectedEntities).forEach(entity => {
