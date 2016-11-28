@@ -96,15 +96,19 @@ export default function (token, endpoint) {
           }
         }
 
-        // find all entities (recursivly) in resource
+        // find all entities (recursivly) in the resource we publishing
         const entities = findAllEntitiesIn(data)
 
         // merge entities into cache
         Object.values(entities).forEach(entity => {
-          entityCache[entity.url] = deepMerge(entityCache[entity.url], entity, replace)
+          if (entity.url === data.url) {
+            entityCache[entity.url] = deepMerge(entityCache[entity.url], entity, replace)
+          } else {
+            entityCache[entity.url] = deepMerge(entityCache[entity.url], entity)
+          }
         })
 
-        // merge cache -> entities
+        // merge cache into entities
         Object.values(entities).forEach(entity => {
           Object.assign(entity, entityCache[entity.url])
         })
@@ -122,29 +126,29 @@ export default function (token, endpoint) {
           }
         })
 
-        // find all entities (recursivly) in the cache with a reference to any
-        // of the entities in the resource we want to publish
-        // TODO: remove this if not needed anymore
-        const affectedEntities = Object.assign({}, entities)
-        // Object.values(entities).forEach(entity => {
-        //   Object.assign(affectedEntities, findAllWithReferenceTo(entityCache, entity))
-        // })
-
-        // console.log('entities', entities)
-        // console.log('affectedEntities', affectedEntities)
-
-        // entityToResource cache
-        Object.values(affectedEntities).forEach(entity => {
+        // entityToResource mapping
+        Object.values(entities).forEach(entity => {
           entityToResource[entity.url] = entityToResource[entity.url] || {}
           entityToResource[entity.url][resource] = true
         })
 
-        // cache resource
+        // update the resourceCache not all resources are entities,
+        // for them we just merge into the resourceCache
         if (data.url) {
-          resourceCache[resource] = affectedEntities[data.url]
+          resourceCache[resource] = entities[data.url]
         } else {
           resourceCache[resource] = deepMerge(resourceCache[resource], data, replace)
         }
+
+        // fixup all references from resourceCache to entityCache
+        Object.keys(resourceCache).forEach(key => {
+          if (resourceCache[key].url) {
+            const cachedEntity = entityCache[resourceCache[key].url]
+            if (cachedEntity) {
+              resourceCache[key] = cachedEntity
+            }
+          }
+        })
 
         // Domain specific, fixup level 1 in all cached listings with orderbooks
         Object.values(entityCache).forEach(e => {
@@ -158,9 +162,9 @@ export default function (token, endpoint) {
           }
         })
 
-        // fetch all resources to notify
+        // fetch all resources to notify subscribers for
         const resourcesToNotify = Object.create(null) // in lieu of Set
-        Object.values(affectedEntities).forEach(entity => {
+        Object.values(entities).forEach(entity => {
           Object.keys(entityToResource[entity.url]).forEach(r => (resourcesToNotify[r] = true))
         })
 
@@ -169,7 +173,7 @@ export default function (token, endpoint) {
         resourcesToNotify[resource] = true
 
         // Optimize so we don't call callbacks more than once per publish.
-        // Not strictly necessary, but helps in tests and debugging
+        // Not strictly necessary, but improves performance and unit tests
         const called = Object.create(null) // in lieu of Set
 
         // notify all subscriptions
@@ -177,7 +181,6 @@ export default function (token, endpoint) {
           const subscriptions = resourceToSubscription[r]
           if (subscriptions) {
             subscriptions.forEach(subscription => {
-              this.debug && console.log('calling subscription', subscription)
               if (!called[subscription.id]) {
                 // TODO: should we give all subscribers a copy of the data so they don't pollute the cache by misstake?
                 subscription.callback(err, resourceCache[r], subscription.unsubscribeFn)
