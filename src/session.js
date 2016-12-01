@@ -126,6 +126,18 @@ export default function (token, endpoint) {
           }
         })
 
+        // Domain specific, fixup level 1 in all cached listings with orderbooks
+        Object.values(entityCache).forEach(e => {
+          if (e.orderbook && e.orderbook.levels && e.orderbook.levels.length > 0) {
+            if (e.quotes && e.quotes.bidPrice) {
+              e.orderbook.levels[0].bidPrice = e.quotes.bidPrice
+            }
+            if (e.quotes && e.quotes.askPrice) {
+              e.orderbook.levels[0].askPrice = e.quotes.askPrice
+            }
+          }
+        })
+
         // entityToResource mapping
         Object.values(entities).forEach(entity => {
           entityToResource[entity.url] = entityToResource[entity.url] || {}
@@ -146,18 +158,6 @@ export default function (token, endpoint) {
             const cachedEntity = entityCache[resourceCache[key].url]
             if (cachedEntity) {
               resourceCache[key] = cachedEntity
-            }
-          }
-        })
-
-        // Domain specific, fixup level 1 in all cached listings with orderbooks
-        Object.values(entityCache).forEach(e => {
-          if (e.orderbook && e.orderbook.levels && e.orderbook.levels.length > 0) {
-            if (e.quotes && e.quotes.bidPrice) {
-              e.orderbook.levels[0].bidPrice = e.quotes.bidPrice
-            }
-            if (e.quotes && e.quotes.askPrice) {
-              e.orderbook.levels[0].askPrice = e.quotes.askPrice
             }
           }
         })
