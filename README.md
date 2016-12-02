@@ -1,6 +1,5 @@
 # About
 Javascript SDK for api.six.se
-<!-- TODO: add Contact info -->
 
 ## Usage
 
