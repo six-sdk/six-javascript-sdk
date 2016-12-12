@@ -117,7 +117,7 @@ export default function (token, endpoint) {
         Object.values(entities).forEach(entity => {
           for (var field in entity) {
             if (entity.hasOwnProperty(field)) {
-              if (typeof entity[field] === 'object') {
+              if (entity[field] && typeof entity[field] === 'object') {
                 if (entity[field].url) {
                   entity[field] = entityCache[entity[field].url] || entity[field]
                 }
