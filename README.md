@@ -5,7 +5,7 @@ Javascript SDK for api.six.se
 
 ```javascript
 // for testing you can get token with:
-// Six._internal.authenticateWithCredentials(client_id,client_secreat)
+// Six._internal.authenticateWithCredentials(client_id,client_secret)
 var TOKEN = 'token-authenticated-in-backend'
 
 /* Six.connect(TOKEN,[endpoint]) */
