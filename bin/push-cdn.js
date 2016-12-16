@@ -8,7 +8,7 @@ var push = function(name,version,maxAge) {
   console.log('> Pushing version '+version)
 
   // --cache-control
-  var cmdline = "AWS_DEFAULT_REGION=eu-central-1 aws s3 cp --exclude=\"*\" --include=\"*.js\" --recursive dist/ s3://cdn.six.se/js/"+name+"/"+version+"/ --cache-control max-age="+maxAge+" --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers"
+  var cmdline = "AWS_DEFAULT_REGION=eu-central-1 aws s3 cp --exclude=\"*\" --include=\"*.js\" --recursive dist/ s3://solutions-cdn.six.se/js/"+name+"/"+version+"/ --cache-control max-age="+maxAge+" --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers"
   exec(cmdline, (err, stdout, stderr) => {
     if (err) {
       console.error(err)
