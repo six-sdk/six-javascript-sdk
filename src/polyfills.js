@@ -6,6 +6,8 @@
 
 // install Promise polyfill globally
 import 'es6-promise'
+// install Object.assign polyfill
+import 'object.assign'
 
 // String polyfills
 if (!String.prototype.endsWith) {
