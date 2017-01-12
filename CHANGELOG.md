@@ -9,6 +9,9 @@ where **Major.Minor.Patch** is interpreted as **Breaking.Feature.Fix**.
 <!-- ### Removed -->
 <!-- ### Fixed -->
 
+## [1.0.0]
+- Stable release
+
 ## [0.7.0]
 - Cache merge code rewrite
 - Adds replace option to session.refresh(resource,replace)
