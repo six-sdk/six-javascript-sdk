@@ -24,6 +24,7 @@ where **Major.Minor.Patch** is interpreted as **Breaking.Feature.Fix**.
 - Retries with back-off
 
 
+[1.0.0]: https://github.com/six-sdk/six-javascript-sdk/compare/v1.0.0...HEAD
 [0.7.0]: https://github.com/six-sdk/six-javascript-sdk/compare/v0.7.0...HEAD
 [Unreleased]: https://github.com/six-sdk/six-javascript-sdk/compare/v0.7.0...HEAD
 [Pre-release]: https://github.com/six-sdk/six-javascript-sdk/compare/v0.7.0...HEAD
