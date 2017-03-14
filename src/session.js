@@ -22,6 +22,20 @@ export default function (token, endpoint) {
   const resourceCache = {} // resource -> response
   const entityToResource = {} // entity.url -> resource
 
+  // queue used for batching UI updates
+  const batchInterval = 200 // 200ms update interval is an informal SIX best-practice for display products
+  let queue = {}
+  setInterval(() => {
+    // TODO: we can most likely do something more sofisticated here be timing the loop
+    // and only publish X items per frame
+    const items = Object.values(queue)
+    for (let i = 0; i < items.length; i++) {
+      window.requestAnimationFrame(items[i])
+    }
+    queue = {}
+  }, batchInterval)
+
+  // create a fn that unsubscribes a listener
   const unsubscribe = function (id) {
     const subscription = subscriptions[id]
     if (subscription) {
@@ -182,8 +196,7 @@ export default function (token, endpoint) {
           if (subscriptions) {
             subscriptions.forEach(subscription => {
               if (!called[subscription.id]) {
-                // TODO: should we give all subscribers a copy of the data so they don't pollute the cache by misstake?
-                subscription.callback(err, resourceCache[r], subscription.unsubscribeFn)
+                queue[subscription.id] = () => subscription.callback(err, resourceCache[r], subscription.unsubscribeFn)
                 called[subscription.id] = true
               }
             })
