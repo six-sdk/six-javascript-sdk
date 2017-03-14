@@ -5,6 +5,9 @@ import FakeXMLHttpRequest from './fake-xml-http-request'
 
 import connect from '../src/session';
 
+window.requestAnimationFrame = (fn) => fn()
+
+
 describe('merge', () => {
   let session;
   let population;
@@ -55,7 +58,7 @@ describe('merge', () => {
       }
     );
     session._internal.publish('/population/ERICSSON_POPULATION', population);
-    session._internal.publish('/listings/848/quotes', quoteUpdate);
+    setTimeout(() => session._internal.publish('/listings/848/quotes', quoteUpdate),300)
   });
 
   // it('should merge removed items correctly', (done) => {
@@ -124,7 +127,7 @@ describe('merge', () => {
           ]
       }
     });
-    session._internal.publish('/collection', {}, null, true);
+    setTimeout(() => session._internal.publish('/collection', {}, null, true),300)
   });
 
 
@@ -145,7 +148,7 @@ describe('merge', () => {
     session.subscribe('/population/ERICSSON_POPULATION',(err, data, unsub) => {});
 
     session._internal.publish('/listings/848/quotes', quoteUpdate);
-    session._internal.publish('/population/ERICSSON_POPULATION', population);
+    setTimeout(() => session._internal.publish('/population/ERICSSON_POPULATION', population),300)
   });
 
   it('should merge population update into listing and notify subscribers', (done) => {
@@ -169,7 +172,7 @@ describe('merge', () => {
       quotes: JSON.parse(JSON.stringify(quoteUpdate)),
       url: 'https://api.six.se/v2/listings/848'
     });
-    session._internal.publish('/population/ERICSSON_POPULATION', population);
+    setTimeout(() => session._internal.publish('/population/ERICSSON_POPULATION', population),300)
   });
 });
 
@@ -222,6 +225,6 @@ describe('merge options view', () => {
       }
     );
     session._internal.publish('/population/ERICSSON_POPULATION', optionsView);
-    session._internal.publish('/listings/848/quotes', quoteUpdate);
+    setTimeout(() => session._internal.publish('/listings/848/quotes', quoteUpdate),300)
   });
 });

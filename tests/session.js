@@ -6,6 +6,8 @@ import FakeXMLHttpRequest from './fake-xml-http-request'
 
 import SDK from '../src'
 
+window.requestAnimationFrame = (fn) => fn()
+
 // shared test data
 const TOKEN = 'fake-token'
 
@@ -109,7 +111,7 @@ describe('subscribe(resource,[callback])',() => {
     XMLHttpRequest.respondWith(response)
 
     session.refresh('/listings/848')
-    XMLHttpRequest.respondWith(response)
+    setTimeout(() => XMLHttpRequest.respondWith(response), 300)
   })
 
 
@@ -149,7 +151,7 @@ describe('subscribe(resource,[callback])',() => {
         expect(errorSpy.calledOnce).to.be.true
         expect(callback.calledTwice).to.be.true
         done()
-      }, 15)
+      }, 300)
     })
 
     it('should abort retry on unsubscribe',(done) => {
