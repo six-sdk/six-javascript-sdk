@@ -30,12 +30,7 @@ export default function (token, endpoint) {
     // and only publish X items per frame
     const items = Object.values(queue)
     for (let i = 0; i < items.length; i++) {
-      // If document hidden is true, requestAnimationFrame will not fire, in this case we call immediately
-      if (document.hidden) {
-        items[i].call()
-      } else {
-        window.requestAnimationFrame(items[i])
-      }
+      items[i].call()
     }
     queue = {}
   }, batchInterval)
