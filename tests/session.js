@@ -7,9 +7,13 @@ import FakeXMLHttpRequest from './fake-xml-http-request'
 import SDK from '../src'
 
 window.requestAnimationFrame = (fn) => fn()
+global.document = {
+  hidden: false
+}
 
 // shared test data
 const TOKEN = 'fake-token'
+
 
 // test the mock first
 describe('FakeXMLHttpRequest', () => {})
