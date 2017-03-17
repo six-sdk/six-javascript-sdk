@@ -143,14 +143,13 @@ export default function (token, endpoint) {
         // Domain specific, fixup level 1 in all cached listings with orderbooks
         Object.values(entityCache).forEach(e => {
           if (e.orderbook && e.orderbook.levels && e.orderbook.levels.length > 0) {
-            if (e.quotes && e.quotes.bidPrice) {
+            if (e.quotes && e.quotes.bidPrice && e.quotes.bidPrice !== e.orderbook.levels[0].bidPrice) {
               e.orderbook.levels[0].bidPrice = e.quotes.bidPrice
+              e.orderbook.lastUpdated = e.quotes.lastUpdated
             }
-            if (e.quotes && e.quotes.askPrice) {
+            if (e.quotes && e.quotes.askPrice && e.quotes.askPrice !== e.orderbook.levels[0].askPrice) {
               e.orderbook.levels[0].askPrice = e.quotes.askPrice
-            }
-            if (e.orderbook.lastUpdated) {
-              e.quotes.lastUpdated = e.orderbook.lastUpdated
+              e.orderbook.lastUpdated = e.quotes.lastUpdated
             }
           }
         })
