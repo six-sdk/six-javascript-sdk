@@ -9,6 +9,13 @@ where **Major.Minor.Patch** is interpreted as **Breaking.Feature.Fix**.
 <!-- ### Removed -->
 <!-- ### Fixed -->
 
+## [1.0.2]
+- Tweaks for batching updates to subscribers
+- Fixes for syncing of orderbooks and quotes
+
+## [1.0.1]
+- adds polyfill for Object.assign 
+
 ## [1.0.0]
 - Stable release
 

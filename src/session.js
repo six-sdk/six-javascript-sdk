@@ -149,6 +149,9 @@ export default function (token, endpoint) {
             if (e.quotes && e.quotes.askPrice) {
               e.orderbook.levels[0].askPrice = e.quotes.askPrice
             }
+            if (e.orderbook.lastUpdated) {
+              e.quotes.lastUpdated = e.orderbook.lastUpdated
+            }
           }
         })
 
