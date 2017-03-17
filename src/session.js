@@ -142,14 +142,23 @@ export default function (token, endpoint) {
 
         // Domain specific, fixup level 1 in all cached listings with orderbooks
         Object.values(entityCache).forEach(e => {
+          // check if this entity have quotes and orderbook
           if (e.orderbook && e.orderbook.levels && e.orderbook.levels.length > 0) {
-            if (e.quotes && e.quotes.bidPrice && e.quotes.bidPrice !== e.orderbook.levels[0].bidPrice) {
-              e.orderbook.levels[0].bidPrice = e.quotes.bidPrice
-              e.orderbook.lastUpdated = e.quotes.lastUpdated
-            }
-            if (e.quotes && e.quotes.askPrice && e.quotes.askPrice !== e.orderbook.levels[0].askPrice) {
-              e.orderbook.levels[0].askPrice = e.quotes.askPrice
-              e.orderbook.lastUpdated = e.quotes.lastUpdated
+            if (e.quotes && e.quotes.lastUpdated) {
+              if (e.orderbook.levels[0].bidPrice !== e.quotes.bidPrice || e.orderbook.levels[0].askPrice !== e.quotes.askPrice) {
+                // which of the orderbook and quotes have the latest lastUpdated
+                if (new Date(e.orderbook.lastUpdated).getTime() > new Date(e.quotes.lastUpdated).getTime()) {
+                  // copy orderbook to quotes
+                  e.quotes.bidPrice = e.orderbook.levels[0].bidPrice
+                  e.quotes.askPrice = e.orderbook.levels[0].askPrice
+                  e.quotes.lastUpdated = e.orderbook.lastUpdated
+                } else {
+                  // copy quotes to orderbook
+                  e.orderbook.levels[0].bidPrice = e.quotes.bidPrice
+                  e.orderbook.levels[0].askPrice = e.quotes.askPrice
+                  e.orderbook.lastUpdated = e.quotes.lastUpdated
+                }
+              }
             }
           }
         })
@@ -188,8 +197,22 @@ export default function (token, endpoint) {
         // if we are publishing quotes, make sure to notify subscribers of orderbook also
         if (resource.endsWith('/quotes')) {
           const listingUrl = resource.substring(0, resource.length - '/quotes'.length)
-          resourcesToNotify[listingUrl] = true
-          resourcesToNotify[listingUrl + '/orderbook'] = true
+          Object.keys(resourceCache).forEach(resource => {
+            if (resource.startsWith(listingUrl)) {
+              resourcesToNotify[resource] = true
+            }
+          })
+        }
+
+        // domain specific
+        // if we are publishing quotes, make sure to notify subscribers of orderbook also
+        if (resource.endsWith('/orderbook')) {
+          const listingUrl = resource.substring(0, resource.length - '/orderbook'.length)
+          Object.keys(resourceCache).forEach(resource => {
+            if (resource.startsWith(listingUrl)) {
+              resourcesToNotify[resource] = true
+            }
+          })
         }
 
         // always notify all subscriptions for original resource
