@@ -321,10 +321,12 @@ describe('cache',() => {
           url: '/listings/848/orderbook'
         },
         quotes: {
+          lastUpdated: '2017-03-17T15:34:31+01:00',
           askPrice: 10,
-          bidPrice: 20
+          bidPrice: 20,
         },
         orderbook: {
+          lastUpdated: '2017-03-17T15:34:32+01:00',
           url: '/listings/848/orderbook',
           levels: [{
             level: 1,
@@ -357,10 +359,12 @@ describe('cache',() => {
           url: '/listings/848/orderbook'
         },
         quotes: {
+          lastUpdated: '2017-03-17T15:34:31+01:00',
           askPrice: 10,
           bidPrice: 20
         }})
       XMLHttpRequest.respondWith({
+        lastUpdated: '2017-03-17T15:34:32+01:00',
         url: '/listings/848/orderbook',
         levels: [{
           level: 1,
@@ -392,10 +396,12 @@ describe('cache',() => {
       XMLHttpRequest.respondWith({
         url: '/listings/848',
         quotes: {
+          lastUpdated: '2017-03-17T15:34:31+01:00',
           askPrice: 10,
           bidPrice: 20
         }})
       XMLHttpRequest.respondWith({
+        lastUpdated: '2017-03-17T15:34:32+01:00',
         url: '/listings/848/orderbook',
         levels: [{
           level: 1,
@@ -425,10 +431,12 @@ describe('cache',() => {
       XMLHttpRequest.respondWith({
         url: '/listings/848',
         quotes: {
+          lastUpdated: '2017-03-17T15:34:31+01:00',
           askPrice: 10,
           bidPrice: 20
         },
         orderbook: {
+          lastUpdated: '2017-03-17T15:34:32+01:00',
           url: '/listings/848/orderbook',
           levels: [{
             level: 1,
@@ -443,6 +451,7 @@ describe('cache',() => {
       })
 
       XMLHttpRequest.respondWith({
+        lastUpdated: '2017-03-17T15:34:33+01:00',
         url: '/listings/848/orderbook',
         levels: [{
           level: 1,
@@ -472,6 +481,7 @@ describe('cache',() => {
     it('handle orderbook, listing', (done) => {
       // queue up some responses
       XMLHttpRequest.respondWith({
+        lastUpdated: '2017-03-17T15:34:31+01:00',
         url: '/listings/848/orderbook',
         levels: [{
           level: 1,
@@ -487,6 +497,7 @@ describe('cache',() => {
       XMLHttpRequest.respondWith({
         url: '/listings/848',
         quotes: {
+          lastUpdated: '2017-03-17T15:34:32+01:00',
           askPrice: 10,
           bidPrice: 20
         },
@@ -517,11 +528,13 @@ describe('cache',() => {
           url: '/listings/848/orderbook'
         },
         quotes: {
+          lastUpdated: '2017-03-17T15:34:31+01:00',
           askPrice: 10,
           bidPrice: 20
         }})
 
       XMLHttpRequest.respondWith({
+        lastUpdated: '2017-03-17T15:34:32+01:00',
         url: '/listings/848/orderbook',
         levels: [{
           level: 1,
@@ -540,6 +553,7 @@ describe('cache',() => {
             url: '/listings/848/orderbook'
           },
           quotes: {
+            lastUpdated: '2017-03-17T15:34:33+01:00',
             askPrice: 100,
             bidPrice: 200
           }})
