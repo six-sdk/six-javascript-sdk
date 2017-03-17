@@ -185,11 +185,11 @@ export default function (token, endpoint) {
         })
 
         // domain specific
-        // if we are publishing an orderbook, make sure to notify subscribers of quotes also
-        if (resource.endsWith('/orderbook')) {
-          const listingUrl = resource.substring(0, resource.length - '/orderbook'.length)
+        // if we are publishing quotes, make sure to notify subscribers of orderbook also
+        if (resource.endsWith('/quotes')) {
+          const listingUrl = resource.substring(0, resource.length - '/quotes'.length)
           resourcesToNotify[listingUrl] = true
-          resourcesToNotify[listingUrl + '/quotes'] = true
+          resourcesToNotify[listingUrl + '/orderbook'] = true
         }
 
         // always notify all subscriptions for original resource
