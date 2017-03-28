@@ -17,11 +17,6 @@ export default function (token, endpoint) {
   const subscriptions = {}
   const resourceToSubscription = {}
 
-  // cache
-  const entityCache = {} // entity.url -> entity
-  const resourceCache = {} // resource -> response
-  const entityToResource = {} // entity.url -> resource
-
   // queue used for batching UI updates
   const batchInterval = 200 // 200ms update interval is an informal SIX best-practice for display products
   let queue = {}
@@ -51,9 +46,9 @@ export default function (token, endpoint) {
       _endpoint: endpoint,
       _subscriptions: subscriptions,
       _resourceToSubscription: resourceToSubscription,
-      _entityCache: entityCache,
-      _resourceCache: resourceCache,
-      _entityToResource: entityToResource,
+      _entityCache: {}, // entity.url -> entity
+      _resourceCache: {}, // resource -> response
+      _entityToResource: {}, // entity.url -> resource
       _context: { sdk: VersionInfo.version },
 
       getToken: function getToken () {
@@ -91,6 +86,10 @@ export default function (token, endpoint) {
       },
 
       publish: function publish (resource, data, err, replace) {
+        const entityCache = this._entityCache
+        const resourceCache = this._resourceCache
+        const entityToResource = this._entityToResource
+
         // on errors, notify all subscriptions *only* for original resource
         if (err) {
           this.publishError(resource, data, err)
@@ -255,6 +254,8 @@ export default function (token, endpoint) {
 
     subscribe: function subscribe (resource, callback) {
       this.debug && console.log('subscribe', currentToken, resource, endpoint)
+      const resourceCache = this._internal._resourceCache
+
       const sub = {id: nextId(), resource, callback}
 
       // create an Fn to unsubscribe
@@ -322,7 +323,7 @@ export default function (token, endpoint) {
       let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'DELETE', body: null}), errFunc, () => { return !this.hasSubscriptions(resource) })
 
       promise.then((response) => setTimeout(() => {
-        delete resourceCache[resource]
+        delete this._internal._resourceCache[resource]
         this._internal.publish(resource, {}, null, true)
       }, 0))
       promise.catch(errFunc)
@@ -331,10 +332,9 @@ export default function (token, endpoint) {
     },
 
     clearCache: function clearCache () {
-      /* eslint no-multi-spaces: 0 */
-      for (let prop in entityCache)       { if (entityCache.hasOwnProperty(prop))       { delete entityCache[prop] } }
-      for (let prop in resourceCache)     { if (resourceCache.hasOwnProperty(prop))     { delete resourceCache[prop] } }
-      for (let prop in entityToResource)  { if (entityToResource.hasOwnProperty(prop))  { delete entityToResource[prop] } }
+      this._internal._entityCache = {}
+      this._internal._resourceCache = {}
+      this._internal._entityToResource = {}
     },
 
     withContext: function withContext (context) {
