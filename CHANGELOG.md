@@ -4,17 +4,15 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/),
 where **Major.Minor.Patch** is interpreted as **Breaking.Feature.Fix**.
 
-<!-- ## [Unreleased] -->
-<!-- ### Added -->
-<!-- ### Removed -->
-<!-- ### Fixed -->
+## [1.0.3]
+- Fix for session.clearCache() being slow on certain browsers
 
 ## [1.0.2]
 - Tweaks for batching updates to subscribers
 - Fixes for syncing of orderbooks and quotes
 
 ## [1.0.1]
-- adds polyfill for Object.assign 
+- adds polyfill for Object.assign
 
 ## [1.0.0]
 - Stable release
