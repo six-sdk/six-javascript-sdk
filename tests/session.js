@@ -61,6 +61,41 @@ describe('subscribe(resource,[callback])',() => {
     XMLHttpRequest.respondWith(response)
   })
 
+  it('should merge null updates on quotes',(done) => {
+    session.subscribe('/listings/848?fields=currencyCode,id,url,isinCode,maturityDate,longName,name,micCode,type,market.id,issuer.name,coupon,quotes.*', (err, data, unsub) => {
+      unsub();
+      expect(data).to.exist
+      expect(data.id).to.equal('848')
+      session._internal.publish('/listings/848?fields=currencyCode,id,url,isinCode,maturityDate,longName,name,micCode,type,market.id,issuer.name,coupon,quotes.*', {
+        "url" : "https://api.six.se/v2/listings/848",
+        "id" : "848",
+        "type" : "EQUITY",
+        "quotes" : {
+          "url" : "https://api.six.se/v2/listings/848/quotes",
+          "lastUpdated" : "2017-01-01T15:13:27+02:00",
+          "lastPrice" : null,
+        }
+      })
+      session.subscribe('/listings/848?fields=currencyCode,id,url,isinCode,maturityDate,longName,name,micCode,type,market.id,issuer.name,coupon,quotes.*', (err1, data1) => {
+        expect(data1).to.exist
+        expect(data1.id).to.equal('848')
+        expect(data1.quotes.lastPrice).to.equal(null)
+        done()
+      })
+    })
+
+    session._internal.publish('/listings/848?fields=currencyCode,id,url,isinCode,maturityDate,longName,name,micCode,type,market.id,issuer.name,coupon,quotes.*', {
+      "url" : "https://api.six.se/v2/listings/848",
+      "id" : "848",
+      "type" : "EQUITY",
+      "quotes" : {
+        "url" : "https://api.six.se/v2/listings/848/quotes",
+        "lastUpdated" : "2017-01-01T15:11:27+02:00",
+        "lastPrice" : 59.9,
+      }
+    })
+  })
+
   it('should send correct auth headers',() => {
     session.subscribe('/listings/848',() => {})
     let request = XMLHttpRequest.requests[0]
