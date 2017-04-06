@@ -142,7 +142,7 @@ export default function (token, endpoint) {
         // Domain specific, fixup level 1 in all cached listings with orderbooks
         Object.values(entityCache).forEach(e => {
           // check if this entity have quotes and orderbook
-          if (e.orderbook && e.orderbook.levels && e.orderbook.levels.length > 0) {
+          if (e.orderbook && e.orderbook.lastUpdated && e.orderbook.levels && e.orderbook.levels.length > 0) {
             if (e.quotes && e.quotes.lastUpdated) {
               if (e.orderbook.levels[0].bidPrice !== e.quotes.bidPrice || e.orderbook.levels[0].askPrice !== e.quotes.askPrice) {
                 // which of the orderbook and quotes have the latest lastUpdated

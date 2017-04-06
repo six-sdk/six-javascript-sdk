@@ -349,7 +349,6 @@ describe('cache',() => {
       })
     })
 
-
     // quote + orderbook
     it('handle listing, orderbook', (done) => {
       // queue up some responses
@@ -593,6 +592,48 @@ describe('cache',() => {
     })
 
     XMLHttpRequest.respondWithError({})
+  })
+
+
+
+  // SIXWID-384
+  it.only('handle quote/orderbook sync for streaming use case I', () => {
+      // streaming message
+      const incoming = [
+        {
+          resource: '/listings/4727',
+          data: {
+            url: '/listings/4727',
+            orderbook: {
+              url: '/listings/4727/orderbook'
+            },
+            quotes: {
+              url: '/listings/4727/quotes',
+            }
+          }
+        },
+        {"data":{"lastUpdated":"2017-04-05T13:35:04+02:00","levels":[{"level":1,"askPrice":null,"bidPrice":42.0,"askVolume":null,"bidVolume":300.0,"askOrders":null,"bidOrders":1}]},"resource":"/listings/4727/orderbook","type":"DATA"},
+        {"data":{"lastUpdated":"2017-04-05T13:35:04+02:00","askPrice":null,"bidPrice":42.0},"resource":"/listings/4727/quotes","type":"DATA"},
+        {"data":{"lastUpdated":"2017-04-05T13:35:04+02:00","levels":[{"level":1,"askPrice":42.2,"bidPrice":42.0,"askVolume":589.0,"bidVolume":1800.0,"askOrders":2,"bidOrders":2}]},"resource":"/listings/4727/orderbook","type":"DATA"},
+        {"data":{"lastUpdated":"2017-04-05T13:35:04+02:00","askPrice":42.2,"bidPrice":42.0},"resource":"/listings/4727/quotes","type":"DATA"},
+      ]
+
+      incoming.forEach(message => {
+        message.data.url = message.resource
+        session._internal.publish(message.resource,message.data)
+      })
+
+      //console.log('session._internal.resourceCache',JSON.stringify(session._internal._resourceCache,null,2))
+
+      // validate cache
+      const quotes = session._internal._resourceCache['/listings/4727'].quotes
+      const orderbook = session._internal._resourceCache['/listings/4727'].orderbook
+
+      expect(orderbook.levels[0].bidPrice).to.equal(quotes.bidPrice)
+      expect(orderbook.levels[0].askPrice).to.equal(quotes.askPrice)
+
+      expect(orderbook.levels[0].bidPrice).to.equal(42.0)
+      expect(orderbook.levels[0].askPrice).to.equal(42.2)
   })
 
 })
