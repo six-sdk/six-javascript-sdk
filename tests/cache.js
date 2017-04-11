@@ -597,7 +597,7 @@ describe('cache',() => {
 
 
   // SIXWID-384
-  it.only('handle quote/orderbook sync for streaming use case I', () => {
+  it('handle quote/orderbook sync for streaming use case I', () => {
       // streaming message
       const incoming = [
         {
