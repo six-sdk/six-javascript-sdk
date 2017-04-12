@@ -273,7 +273,6 @@ export default function (token, endpoint) {
       if (resourceCache[resource]) {
         // console.log("resource found in cache, notify direct")
         callback(null, resourceCache[resource], sub.unsubscribeFn)
-        return sub.unsubscribeFn
       }
 
       // if not found in cache, we call refresh to fetch from the API
