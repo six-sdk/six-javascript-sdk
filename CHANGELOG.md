@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/),
 where **Major.Minor.Patch** is interpreted as **Breaking.Feature.Fix**.
 
+## [1.0.5]
+- subscribe will always refresh the resource
+
 ## [1.0.4]
 - Null updates are merged into the cache
 
