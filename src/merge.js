@@ -15,17 +15,18 @@ export const deepMerge = function deepMerge (target, source, replace) {
     }
   }
 
-  for (var prop in source) {
+  for (let prop in source) {
     if (source.hasOwnProperty(prop)) {
-      if (Array.isArray(source[prop])) {
-        target[prop] = source[prop]
+      const sourceValue = source[prop]
+      if (sourceValue && sourceValue.constructor === Array) {
+        target[prop] = sourceValue
         // If source[prop] is null there is a bug where the engine will think it's an object
         // this will prevent deepMerge from changing the value to null (clearing the value)
         // therefore we check if the source[prop] is null here
-      } else if (source[prop] !== null && target[prop] && typeof source[prop] === 'object') {
-        deepMerge(target[prop], source[prop])
+      } else if (sourceValue !== null && target[prop] && typeof sourceValue === 'object') {
+        deepMerge(target[prop], sourceValue)
       } else {
-        target[prop] = source[prop]
+        target[prop] = sourceValue
       }
     }
   }
