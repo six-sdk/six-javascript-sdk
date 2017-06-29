@@ -35,20 +35,38 @@ export const deepMerge = function deepMerge (target, source, replace) {
 }
 
 // find all entities (objects with url) in resource
-export const findAllEntitiesIn = function findAllEntitiesIn (resource, result = {}) {
+export const findAllEntitiesIn = function findAllEntitiesIn (resource, result = []) {
   if (resource && resource.url) {
-    result[resource.url] = resource
+    result.push(resource)
   }
 
-  for (var field in resource) {
-    if (resource.hasOwnProperty(field)) {
-      if (typeof resource[field] === 'object') {
-        findAllEntitiesIn(resource[field], result)
+  if (resource && resource.constructor === Array) {
+    for (let i = 0; i < resource.length; i += 1) {
+      findAllEntitiesIn(resource[i], result)
+    }
+  } else {
+    for (var field in resource) {
+      if (resource.hasOwnProperty(field)) {
+        if (typeof resource[field] === 'object') {
+          findAllEntitiesIn(resource[field], result)
+        }
       }
     }
   }
 
   return result
+}
+
+// find the first entity matching the supplied url
+export const findEntity = function findEntity(entities = [], url) {
+  if (url) {
+    for (let i = 0; i < entities.length; i += 1) {
+      if (entities[i].url === url) {
+        return entities[i]
+      }
+    }
+  }
+  return undefined
 }
 
 // find all entities (objects with url) in resource

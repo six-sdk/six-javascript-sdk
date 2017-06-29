@@ -14,7 +14,6 @@ global.document = {
 // shared test data
 const TOKEN = 'fake-token'
 
-
 // test the mock first
 describe('FakeXMLHttpRequest', () => {})
 
@@ -36,6 +35,8 @@ describe('withLocale', () => {
 
 describe('subscribe(resource,[callback])',() => {
   const response = {id: '848', url: '/listing/848'}
+  const searchConfiguration = { paging : { limit: 25, offset: 0 }, query: "ABB", groups: [ { id: "test", populationIds: [ "ALL_STOCK" ]}]};
+  const searchRequestResponse = { pagination: { limit: 25, offset: 0 }, groups: [ { totalItems: 1, items: [ { url: "https://api.six.se/v2/listings/848", id: '848' }]  }] };
   let session = null
   let clock
 
@@ -151,6 +152,21 @@ describe('subscribe(resource,[callback])',() => {
 
     session.refresh('/listings/848')
     setTimeout(() => XMLHttpRequest.respondWith(response), 300)
+  })
+
+  it('should support POST', (done) => {
+    let calls = 0
+    session.subscribe('/search',(err,data) => {
+      calls++
+      expect(data).to.exist
+      expect(data.groups[0].items[0].id).to.equal('848')
+      if (calls == 2) done()
+    }, searchConfiguration)
+
+    XMLHttpRequest.respondWith(searchRequestResponse)
+
+    session.post('/search', searchConfiguration);
+    setTimeout(() => XMLHttpRequest.respondWith(searchRequestResponse), 300)
   })
 
 

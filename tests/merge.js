@@ -228,3 +228,128 @@ describe('merge options view', () => {
     setTimeout(() => session._internal.publish('/listings/848/quotes', quoteUpdate),300)
   });
 });
+
+describe('merge search result', () => {
+  let session;
+  let searchResult;
+  let quoteUpdate;
+  let searchConfig;
+  const xhr = global.XMLHttpRequest;
+
+  beforeEach(() => {
+    searchConfig = {"pagination":{"limit":25,"offset":0},"fields":"*,groups.*.items.*.id,groups.*.items.*.longName,groups.*.items.*.name,groups.*.items.*.type,groups.*.items.*.subType,groups.*.items.*.currencyCode,groups.*.items.*.micCode,groups.*.items.*.underlyingListing,groups.*.items.*.issuer.id,groups.*.items.*.url,groups.*.items.*.quotes.lastPrice,groups.*.items.*.quotes.url,groups.*.items.*.quotes.lastValue,groups.*.items.*.quotes.midPrice,groups.*.items.*.quotes.midInterest,groups.*.items.*.quotes.changeDay,groups.*.items.*.quotes.changePercentDay,groups.*.items.*.quotes.tradedVolume,groups.*.items.*.quotes.lastUpdated","groups":[{"id":"equities","populationIds":["ALL_STOCKS"]},{"id":"swedbank-certificates","populationIds":["ALL_SWEDISH_WARRANTS_CERTIFICATE_SWEDBANK"]},{"id":"all"}],"query":"eric"};
+    session = connect('fake-token');
+    global.XMLHttpRequest = FakeXMLHttpRequest();
+    searchResult = {
+      "pagination" : {
+        "limit" : 25,
+        "offset" : 0
+      },
+      "groups" : [{
+        "items" : [{
+          "url" : "https://api.six.se/v2/listings/848",
+          "id" : "848",
+          "type" : "EQUITY",
+          "currencyCode" : "SEK",
+          "longName" : "Ericsson B",
+          "name" : "ERIC B",
+          "micCode" : "XSTO",
+          "subType" : "STOCK",
+          "issuer" : {
+            "id" : "125"
+          },
+          "quotes" : {
+            "url" : "https://api.six.se/v2/listings/848/quotes",
+            "lastUpdated" : "2017-06-26T11:42:28+02:00",
+            "lastPrice" : 63.9,
+            "tradedVolume" : 2358715.0,
+            "changeDay" : 0.05,
+            "changePercentDay" : 0.078
+          }
+        },{
+          "url" : "https://api.six.se/v2/listings/847",
+          "id" : "847",
+          "type" : "EQUITY",
+          "currencyCode" : "SEK",
+          "longName" : "Ericsson A",
+          "name" : "ERIC A",
+          "micCode" : "XSTO",
+          "subType" : "STOCK",
+          "issuer" : {
+            "id" : "125"
+          },
+          "quotes" : {
+            "url" : "https://api.six.se/v2/listings/847/quotes",
+            "lastUpdated" : "2017-06-26T11:40:22+02:00",
+            "lastPrice" : 63.2,
+            "tradedVolume" : 9515.0,
+            "changeDay" : 0.15,
+            "changePercentDay" : 0.238
+          }
+        },{
+          "url" : "https://api.six.se/v2/listings/86092",
+          "id" : "86092",
+          "type" : "EQUITY",
+          "currencyCode" : "USD",
+          "longName" : "Ericsson Sp ADS-B",
+          "name" : "ERIC",
+          "micCode" : "XNGS",
+          "subType" : "STOCK",
+          "issuer" : {
+            "id" : "125"
+          },
+          "quotes" : {
+            "url" : "https://api.six.se/v2/listings/86092/quotes",
+            "lastUpdated" : "2017-06-26T11:41:50+02:00",
+            "lastPrice" : 7.25,
+            "changeDay" : 0.0,
+            "changePercentDay" : 0.0
+          }
+        },{
+          "url" : "https://api.six.se/v2/listings/108430",
+          "id" : "108430",
+          "type" : "EQUITY",
+          "currencyCode" : "EUR",
+          "longName" : "Ericsson B",
+          "name" : "ERIBR",
+          "micCode" : "XHEL",
+          "subType" : "STOCK",
+          "issuer" : {
+            "id" : "125"
+          },
+          "quotes" : {
+            "url" : "https://api.six.se/v2/listings/108430/quotes",
+            "lastUpdated" : "2017-06-26T11:41:50+02:00"
+          }
+        }]
+      }]
+    };
+    quoteUpdate = {
+      lastPrice: 30.599,
+      url: 'https://api.six.se/v2/listings/848/quotes',
+    };
+  });
+
+  afterEach(() => {
+    global.XMLHttpRequest = xhr;
+  });
+
+  it('should merge quotes on listings in search result correctly', (done) => {
+    let counter = 0;
+    session.subscribe('/search',
+      (err, data) => {
+        counter++;
+        if(counter === 1) {
+          expect(data.groups[0].items[0].quotes.lastPrice).to.equal(63.9);
+        }
+        if(counter === 2) {
+          expect(data.groups[0].items[0].quotes.lastPrice).to.equal(30.599);
+          done();
+        }
+      },
+      searchConfig
+    );
+    session._internal.publish(`/search/${JSON.stringify(searchConfig)}`, searchResult);
+    setTimeout(() => { session._internal.publish('/listings/848/quotes', quoteUpdate); }, 300);
+  });
+});

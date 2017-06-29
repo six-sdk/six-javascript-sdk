@@ -1,6 +1,6 @@
 import {createFetch} from './fetch'
 import {retry} from './retry'
-import {deepMerge, findAllEntitiesIn} from './merge'
+import {deepMerge, findAllEntitiesIn, findEntity} from './merge'
 import VersionInfo from './meta-version'
 
 const nextId = (function generateNextId () {
@@ -125,39 +125,37 @@ export default function (token, endpoint) {
         const entities = findAllEntitiesIn(data)
         const resourcesToNotify = Object.create(null) // in lieu of Set
 
-        for (let entityIndex in entities) {
-          if (entities.hasOwnProperty(entityIndex) && entities.propertyIsEnumerable(entityIndex)) {
-            const entity = entities[entityIndex]
-            // merge entities into cache
-            if (entity.url === data.url) {
-              entityCache[entity.url] = deepMerge(entityCache[entity.url], entity, replace)
-            } else {
-              entityCache[entity.url] = deepMerge(entityCache[entity.url], entity)
-            }
+        for (let entityIndex = 0; entityIndex < entities.length; entityIndex += 1) {
+          const entity = entities[entityIndex]
+          // merge entities into cache
+          if (entity.url === data.url) {
+            entityCache[entity.url] = deepMerge(entityCache[entity.url], entity, replace)
+          } else {
+            entityCache[entity.url] = deepMerge(entityCache[entity.url], entity)
+          }
 
-            // merge cache into entities
-            Object.assign(entity, entityCache[entity.url])
+          // merge cache into entities
+          Object.assign(entity, entityCache[entity.url])
 
-            // resolve all entity references, with entity object instances from the cache
-            for (let field in entity) {
-              if (entity.hasOwnProperty(field)) {
-                if (entity[field] && typeof entity[field] === 'object') {
-                  if (entity[field].url) {
-                    entity[field] = entityCache[entity[field].url] || entity[field]
-                  }
+          // resolve all entity references, with entity object instances from the cache
+          for (let field in entity) {
+            if (entity.hasOwnProperty(field)) {
+              if (entity[field] && typeof entity[field] === 'object') {
+                if (entity[field].url) {
+                  entity[field] = entityCache[entity[field].url] || entity[field]
                 }
               }
             }
+          }
 
-            // entityToResource mapping
-            entityToResource[entity.url] = entityToResource[entity.url] || {}
-            entityToResource[entity.url][resource] = true
+          // entityToResource mapping
+          entityToResource[entity.url] = entityToResource[entity.url] || {}
+          entityToResource[entity.url][resource] = true
 
-            // fetch all resources to notify subscribers for
-            if (entityToResource[entity.url]) {
-              for (let r in entityToResource[entity.url]) {
-                resourcesToNotify[r] = true
-              }
+          // fetch all resources to notify subscribers for
+          if (entityToResource[entity.url]) {
+            for (let r in entityToResource[entity.url]) {
+              resourcesToNotify[r] = true
             }
           }
         }
@@ -191,7 +189,7 @@ export default function (token, endpoint) {
         // update the resourceCache not all resources are entities,
         // for them we just merge into the resourceCache
         if (data.url) {
-          resourceCache[resource] = entities[data.url]
+          resourceCache[resource] = findEntity(entities, data.url)
         } else {
           resourceCache[resource] = deepMerge(resourceCache[resource], data, replace)
         }
@@ -269,11 +267,12 @@ export default function (token, endpoint) {
       return subscriptions && subscriptions.length > 0
     },
 
-    subscribe: function subscribe (resource, callback) {
+    subscribe: function subscribe (resource, callback, body) {
       this.debug && console.log('subscribe', currentToken, resource, endpoint)
       const resourceCache = this._internal._resourceCache
 
-      const sub = {id: nextId(), resource, callback}
+      const calculatedResource = body ? resource + '/' + JSON.stringify(body) : resource;
+      const sub = {id: nextId(), resource: calculatedResource, callback}
 
       // create an Fn to unsubscribe
       sub.unsubscribeFn = () => unsubscribe(sub.id)
@@ -282,20 +281,23 @@ export default function (token, endpoint) {
       subscriptions[sub.id] = sub
 
       // resource -> subscription (exact mapping)
-      resourceToSubscription[resource] = resourceToSubscription[resource] || []
-      resourceToSubscription[resource].push(sub)
+      resourceToSubscription[calculatedResource] = resourceToSubscription[calculatedResource] || []
+      resourceToSubscription[calculatedResource].push(sub)
       // console.log('resourceToSubscription',resourceToSubscription)
 
       // check cache for this resource
-      if (resourceCache[resource]) {
+      if (resourceCache[calculatedResource]) {
         // console.log("resource found in cache, notify direct")
-        callback(null, resourceCache[resource], sub.unsubscribeFn)
+        callback(null, resourceCache[calculatedResource], sub.unsubscribeFn)
       }
 
       // if not found in cache, we call refresh to fetch from the API
       // (only for API resources, i.e starting with a /)
-      if (resource[0] === '/') {
+      if (!body && resource[0] === '/') {
         this.refresh(resource)
+      } else if (body && resource[0] === '/') {
+        // This is a POST request
+        this.post(resource, body)
       }
 
       // return the unsubscribe function
@@ -310,8 +312,22 @@ export default function (token, endpoint) {
       .catch(errFunc)
     },
 
+    post: function post (resource, content) {
+      this.debug && console.log('post', resource, content)
+      const errFunc = (err) => { this._internal.publishError(resource, null, err) }
+      let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'POST', body: content}), errFunc, () => { return !this.hasSubscriptions(resource) })
+      promise.then((response) => setTimeout(() => {
+          if (response) {
+            this._internal.publish(resource + '/' + JSON.stringify(content), response, null)
+          }
+        }
+        , 0))
+      promise.catch(errFunc)
+      return promise
+    },
+
     create: function create (resource, content) {
-      this.debug && console.log('refresh', resource, content)
+      this.debug && console.log('create', resource, content)
       const errFunc = (err) => { this._internal.publishError(resource, null, err) }
       let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'POST', body: content}), errFunc, () => { return !this.hasSubscriptions(resource) })
       promise.then((response) => setTimeout(() => {
