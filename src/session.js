@@ -271,7 +271,7 @@ export default function (token, endpoint) {
       this.debug && console.log('subscribe', currentToken, resource, endpoint)
       const resourceCache = this._internal._resourceCache
 
-      const calculatedResource = body ? resource + '/' + JSON.stringify(body) : resource;
+      const calculatedResource = body ? resource + '/' + JSON.stringify(body) : resource
       const sub = {id: nextId(), resource: calculatedResource, callback}
 
       // create an Fn to unsubscribe
@@ -317,11 +317,10 @@ export default function (token, endpoint) {
       const errFunc = (err) => { this._internal.publishError(resource, null, err) }
       let promise = retry(createFetch(currentToken, resource, endpoint, this._internal._context, {method: 'POST', body: content}), errFunc, () => { return !this.hasSubscriptions(resource) })
       promise.then((response) => setTimeout(() => {
-          if (response) {
-            this._internal.publish(resource + '/' + JSON.stringify(content), response, null)
-          }
+        if (response) {
+          this._internal.publish(resource + '/' + JSON.stringify(content), response, null)
         }
-        , 0))
+      }, 0))
       promise.catch(errFunc)
       return promise
     },
