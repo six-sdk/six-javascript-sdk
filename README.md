@@ -70,7 +70,7 @@ Before using the any of the methods in the SDK you must retrieve an authenticati
 
 All methods to retrive data from the API is attached to the Session object.
 
-- subscribe(resource,callback(error,data,unsubsribe)) -> unsubscribeFn
+- subscribe(resource,callback(error,data,unsubsribe),body) -> unsubscribeFn
 - refresh(resource,replace)
 - create(resource,data) -> Promise
 - update(resource,data) -> Promise
@@ -105,9 +105,9 @@ var session = Six.connect(TOKEN).withLocale('sv-SE')
 
 ### Getting data from the API
 
-The primary way to retrive data from api is via ```subscribe(resource,callbackFn)```
+The primary way to retrive data from api is via ```subscribe(resource,callbackFn)``` or ```subscribe(resource,callbackFn,body)```
 
-The ```subscribe``` method takes a resource (relative to the API endpoint, ie ```/markets/SEE``` not ```https://api.six.se/v2/markets/SSE```) and a callback function.
+The ```subscribe``` method takes a resource (relative to the API endpoint, ie ```/markets/SEE``` not ```https://api.six.se/v2/markets/SSE```), a callback function, and optionally an object. Passing an object can be used for functions in the API such as searching.
 
 The callback function will be called anytime there is new data available for the resource from the SDK (some other component have called ```refresh``` etc). The callback *may* be called **more than once**.
 
