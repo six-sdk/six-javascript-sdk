@@ -4,11 +4,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/),
 where **Major.Minor.Patch** is interpreted as **Breaking.Feature.Fix**.
 
+## [1.0.7]
+- Subscribe has been extended to support POST requests
+
 ## [1.0.6]
 - Performance improvements mainly aimed at Internet Explorer and Microsoft Edge
 
 ## [1.0.5]
-- subscribe will always refresh the resource
+- Subscribe will always refresh the resource
 
 ## [1.0.4]
 - Null updates are merged into the cache
@@ -21,7 +24,7 @@ where **Major.Minor.Patch** is interpreted as **Breaking.Feature.Fix**.
 - Fixes for syncing of orderbooks and quotes
 
 ## [1.0.1]
-- adds polyfill for Object.assign
+- Adds polyfill for Object.assign
 
 ## [1.0.0]
 - Stable release
