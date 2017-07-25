@@ -5,7 +5,7 @@
 // and we may use a more complete polyfill, such as core.js
 
 // install Promise polyfill globally
-import 'es6-promise'
+import 'es6-promise/auto'
 
 // String polyfills
 if (!String.prototype.endsWith) {

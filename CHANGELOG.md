@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/),
 where **Major.Minor.Patch** is interpreted as **Breaking.Feature.Fix**.
 
+## [1.0.8]
+- ES6 Promise polyfill updated
+
 ## [1.0.7]
 - Subscribe has been extended to support POST requests
 
