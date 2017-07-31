@@ -5,3 +5,4 @@ lib
 src/meta-version.js
 .idea
 *.iml
+package-lock.json
